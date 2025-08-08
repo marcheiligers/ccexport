@@ -1,0 +1,179 @@
+# Claude Code Conversation Exporter (Ruby)
+
+A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown format, styled to look similar to Claude Desktop conversations for easy reading.
+
+## Features
+
+### Core Functionality
+- Exports complete Claude Code conversations including prompts, responses, and tool calls
+- GitHub-flavored Markdown output optimized for readability
+- Automatically discovers Claude Code session files
+- Claude Desktop-inspired formatting with user/assistant message indicators
+- Comprehensive RSpec test suite with 36 tests
+
+### Enhanced Tool Formatting
+- **Write Tool**: Shows relative file paths in summary with syntax-highlighted code blocks
+- **Bash Tool**: Displays command descriptions in summary with bash syntax highlighting  
+- **Edit Tool**: Before/After sections showing old and new code with syntax highlighting
+- **TodoWrite Tool**: Emoji-enhanced task lists (✅ completed, 🔄 in progress, ⏳ pending)
+
+### Advanced Features
+- **Universal Path Relativization**: All absolute project paths converted to relative paths
+- **Smart Tool Pairing**: Automatically pairs tool_use with corresponding tool_result messages
+- **Syntax Highlighting**: Supports Ruby, JavaScript, Python, TypeScript, JSON, Markdown, YAML, Bash
+- **Robust Message Processing**: Handles edge cases like tool-only messages and system filtering
+
+## Installation
+
+1. Clone this repository
+2. Install dependencies: `bundle install`
+
+## Usage
+
+### Simple Usage
+
+Run the exporter in any directory where you've used Claude Code:
+
+```ruby
+require_relative 'lib/claude_conversation_exporter'
+
+ClaudeConversationExporter.export
+```
+
+### Custom Usage
+
+```ruby
+require_relative 'lib/claude_conversation_exporter'
+
+# Export from specific project path to custom output directory
+exporter = ClaudeConversationExporter.new('/path/to/project', 'my-conversations')
+result = exporter.export
+
+puts "Exported #{result[:sessions_exported]} conversations"
+puts "Total messages: #{result[:total_messages]}"
+```
+
+### Command Line Usage
+
+```bash
+ruby bin/ccexport
+```
+
+## Output Format
+
+The exporter creates Markdown files with:
+
+- **Session metadata**: Session ID, timestamps, message counts
+- **User messages**: Marked with 👤 User
+- **Assistant messages**: Marked with 🤖 Assistant  
+- **Enhanced tool formatting**: Collapsible sections with syntax highlighting
+- **Relative paths**: All project paths converted to relative format
+- **Clean formatting**: Optimized for GitHub and other Markdown viewers
+
+### Example Output
+
+#### Basic Conversation
+```markdown
+# Claude Code Conversation
+
+**Session:** `20240101-120000-example-session`  
+**Started:** January 1, 2024 at 12:00 PM
+**Last activity:** January 1, 2024 at 12:30 PM
+**Messages:** 4 (2 user, 2 assistant)
+
+---
+
+## 👤 User
+
+Can you create a simple Ruby script for me?
+
+## 🤖 Assistant
+
+I'll create a Ruby script for you.
+```
+
+#### Enhanced Tool Formatting
+
+**Write Tool:**
+```markdown
+## 🔧 Tool Use
+<details>
+<summary>Write lib/hello.rb</summary>
+
+```ruby
+#!/usr/bin/env ruby
+
+puts "Hello, World!"
+```
+</details>
+
+<details>
+<summary>Tool Result</summary>
+
+```
+File created successfully at: lib/hello.rb
+```
+</details>
+```
+
+**Edit Tool:**
+```markdown
+## 🔧 Tool Use
+<details>
+<summary>Edit lib/hello.rb</summary>
+
+**Before:**
+```ruby
+puts "Hello, World!"
+```
+
+**After:**
+```ruby
+puts "Hello, Ruby!"
+```
+</details>
+```
+
+**Bash Tool:**
+```markdown
+## 🔧 Tool Use
+<details>
+<summary>Bash: Run the Ruby script</summary>
+
+```bash
+ruby lib/hello.rb
+```
+</details>
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+bundle exec rspec
+```
+
+## Credits
+
+This Ruby implementation is based on the excellent [claude-code-exporter](https://github.com/developerisnow/claude-code-exporter) JavaScript project by developerisnow. The original project provides the foundation for understanding Claude Code's session storage format and export patterns.
+
+The GitHub-flavored Markdown formatting features were implemented with reference to the [GitHub Markdown Cheatsheet](https://ml-run.github.io/github_markdown_cheatsheet.html), particularly the collapsed sections functionality.
+
+### Key Enhancements in This Ruby Version
+- **Enhanced tool formatting**: Specialized formatting for Write, Edit, and Bash tools
+- **Syntax highlighting**: Automatic language detection and code block formatting
+- **Path relativization**: Clean, portable output with relative paths
+- **Advanced tool pairing**: Smart matching of tool_use with tool_result messages
+- **Comprehensive testing**: 36 RSpec tests covering all functionality
+- **Ruby-idiomatic**: Clean, maintainable Ruby code structure
+
+## Requirements
+
+- Ruby 2.7+
+- Claude Code installed and configured
+- RSpec (for testing)
+
+## License
+
+MIT License - feel free to use and modify as needed.
