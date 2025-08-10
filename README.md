@@ -72,6 +72,9 @@ puts "Total messages: #{result[:total_messages]}"
 # Export only today's conversations
 ./bin/ccexport --today
 
+# Export from different project directory
+./bin/ccexport --in /path/to/project
+
 # Custom output directory
 ./bin/ccexport --out /path/to/output
 
@@ -88,11 +91,12 @@ puts "Total messages: #{result[:total_messages]}"
 ./bin/ccexport --preview --no-open
 
 # Combine multiple options
-./bin/ccexport --from 2024-01-15 --out ./my-exports --timestamps --preview
+./bin/ccexport --in /path/to/project --from 2024-01-15 --out ./my-exports --timestamps --preview
 ```
 
 #### Command Line Options
 
+- `--in PATH`: Project path to export conversations from (default: current directory)
 - `--from DATE`: Filter messages from this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--to DATE`: Filter messages to this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--today`: Filter messages from today only (in your local timezone)

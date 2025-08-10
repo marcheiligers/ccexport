@@ -4,6 +4,192 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
+    <style>
+        :root {
+            --dark-brown: #592d1c;
+            --medium-brown: #cc7c5e;
+            --light-brown: #f3dfd8;
+            --lightest-brown: #f9efec;
+            --light-blue: #a6d2e3;
+            --dark-blue: #1c4859;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--dark-brown);
+            background-color: var(--lightest-brown);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .conversation-content {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(89, 45, 28, 0.1);
+        }
+
+        /* Headers */
+        h1 {
+            color: var(--dark-blue);
+            border-bottom: 2px solid var(--light-blue);
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            border-radius: 0 0 8px 8px;
+        }
+
+        h2 {
+            color: var(--dark-brown);
+            margin-top: 32px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--medium-brown);
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--dark-blue);
+            color: var(--light-blue);
+            padding: 16px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        code {
+            background: var(--light-brown);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        /* Blockquotes (thinking content) */
+        blockquote {
+            border-left: 4px solid var(--light-blue);
+            margin: 16px 0;
+            padding: 12px 20px;
+            background: var(--lightest-brown);
+            border-radius: 0 12px 12px 0;
+            font-style: italic;
+            color: var(--dark-blue);
+        }
+
+        /* Details/Summary (collapsible sections) */
+        details {
+            margin: 16px 0;
+            border: 1px solid var(--light-brown);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        summary {
+            background: var(--light-brown);
+            color: black;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0;
+            transition: background-color 0.2s ease;
+        }
+
+        summary:hover {
+            background: var(--medium-brown);
+            color: white;
+        }
+
+        details[open] summary {
+            border-radius: 12px 12px 0 0;
+        }
+
+        details > *:not(summary) {
+            padding: 16px;
+            margin: 0;
+        }
+
+        details > pre {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(89, 45, 28, 0.1);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-brown);
+        }
+
+        th {
+            background: var(--medium-brown);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: var(--lightest-brown);
+        }
+
+        /* Links */
+        a {
+            color: var(--dark-blue);
+            text-decoration: none;
+            border-bottom: 1px solid var(--light-blue);
+            transition: border-color 0.2s ease;
+        }
+
+        a:hover {
+            border-bottom-color: var(--dark-blue);
+        }
+
+        /* Horizontal rules */
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, var(--light-blue), var(--medium-brown), var(--light-blue));
+            margin: 32px 0;
+            border-radius: 2px;
+        }
+
+        /* Lists */
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        /* Strong/Bold text */
+        strong, b {
+            color: var(--dark-brown);
+            font-weight: 600;
+        }
+
+        p {
+            overflow: scroll;
+        }
+
+        /* Session metadata styling */
+        p strong {
+            color: var(--dark-blue);
+        }
+    </style>
 </head>
 <body>
     <main class="conversation-content">

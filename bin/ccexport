@@ -21,6 +21,10 @@ OptionParser.new do |parser|
     options[:today] = true
   end
   
+  parser.on("--in PATH", "Project path to export conversations from (default: current directory)") do |path|
+    options[:in] = path
+  end
+  
   parser.on("--out PATH", "Output directory or file path (default: claude-conversations)") do |path|
     options[:out] = path
   end
@@ -50,8 +54,9 @@ begin
     exit 1
   end
   
+  project_path = options[:in] || Dir.pwd
   output_dir = options[:out] || 'claude-conversations'
-  result = ClaudeConversationExporter.export(Dir.pwd, output_dir, options)
+  result = ClaudeConversationExporter.export(project_path, output_dir, options)
   
   # Generate preview if requested
   if options[:preview]
