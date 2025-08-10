@@ -4,6 +4,7 @@ require 'json'
 require 'fileutils'
 require 'time'
 require 'set'
+require 'erb'
 
 class ClaudeConversationExporter
   class << self
@@ -11,11 +12,19 @@ class ClaudeConversationExporter
       new(project_path, output_dir, options).export
     end
 
-    def generate_preview(output_dir, open_browser = true)
-      # Find the latest exported markdown file
-      latest_md = Dir.glob(File.join(output_dir, '*.md')).sort.last
+    def generate_preview(output_path_or_dir, open_browser = true, leaf_summaries = [])
+      # Handle both directory and specific file paths
+      if output_path_or_dir.end_with?('.md') && File.exist?(output_path_or_dir)
+        # Specific markdown file provided
+        latest_md = output_path_or_dir
+        output_dir = File.dirname(output_path_or_dir)
+      else
+        # Directory provided - find the latest markdown file
+        output_dir = output_path_or_dir
+        latest_md = Dir.glob(File.join(output_dir, '*.md')).sort.last
+      end
       
-      if latest_md.nil?
+      if latest_md.nil? || !File.exist?(latest_md)
         puts "No markdown files found in #{output_dir}/"
         return false
       end
@@ -29,16 +38,6 @@ class ClaudeConversationExporter
         return false
       end
       
-      # Get GitHub CSS from docs directory
-      css_file = File.join(File.dirname(__FILE__), '..', 'docs', 'github_markdown_cheatsheet.html')
-      unless File.exist?(css_file)
-        puts "Error: GitHub CSS file not found at #{css_file}"
-        return false
-      end
-      
-      # Get the first 20 lines from the GitHub markdown cheatsheet HTML file  
-      html_head = File.readlines(css_file)[0,20].join
-      
       # Use cmark-gfm to convert markdown to HTML with --unsafe for collapsed sections
       md_html = `cmark-gfm --unsafe --extension table --extension strikethrough --extension autolink --extension tagfilter --extension tasklist "#{latest_md}"`
       
@@ -47,8 +46,20 @@ class ClaudeConversationExporter
         return false
       end
       
-      # Create the complete HTML content
-      full_html = html_head + "\n<div class=\"preview theme-light\">" + md_html + "\n</div></body></html>"
+      # Load ERB template
+      template_path = File.join(File.dirname(__FILE__), 'preview_template.html.erb')
+      unless File.exist?(template_path)
+        puts "Error: ERB template not found at #{template_path}"
+        return false
+      end
+      
+      template = File.read(template_path)
+      erb = ERB.new(template)
+      
+      # Create the complete HTML content using ERB template
+      content = md_html
+      title = extract_title_from_summaries_or_markdown(latest_md, leaf_summaries)
+      full_html = erb.result(binding)
       
       # Create HTML file in output directory
       html_filename = latest_md.gsub(/\.md$/, '.html')
@@ -64,6 +75,32 @@ class ClaudeConversationExporter
       
       html_filename
     end
+
+    def extract_title_from_summaries_or_markdown(markdown_file, leaf_summaries = [])
+      # Try to get title from leaf summaries first
+      if leaf_summaries.any?
+        # Use the first (oldest) summary as the main title
+        return leaf_summaries.first[:summary]
+      end
+      
+      # Fallback: read the markdown file and extract title from content
+      begin
+        content = File.read(markdown_file)
+        
+        # Look for the first user message content as fallback
+        if content.match(/## 👤 User\s*\n\n(.+?)(?:\n\n|$)/m)
+          first_user_message = $1.strip
+          # Clean up the message for use as title
+          title_words = first_user_message.split(/\s+/).first(8).join(' ')
+          return title_words.length > 60 ? title_words[0..57] + '...' : title_words
+        end
+        
+        # Final fallback
+        "Claude Code Conversation"
+      rescue
+        "Claude Code Conversation"
+      end
+    end
   end
 
   def initialize(project_path = Dir.pwd, output_dir = 'claude-conversations', options = {})
@@ -73,6 +110,7 @@ class ClaudeConversationExporter
     @compacted_conversation_processed = false
     @options = options
     @show_timestamps = options[:timestamps] || false
+    @leaf_summaries = []
     setup_date_filters
   end
 
@@ -82,7 +120,18 @@ class ClaudeConversationExporter
     
     raise "No session files found in #{session_dir}" if session_files.empty?
 
-    FileUtils.mkdir_p(@output_dir)
+    # Handle output path - could be a directory or specific file
+    if @output_dir.end_with?('.md')
+      # Specific file path provided
+      output_path = File.expand_path(@output_dir)
+      output_dir = File.dirname(output_path)
+      FileUtils.mkdir_p(output_dir)
+    else
+      # Directory provided
+      FileUtils.mkdir_p(@output_dir)
+      output_dir = @output_dir
+      output_path = nil  # Will be generated later
+    end
     
     puts "Found #{session_files.length} session file(s)"
     
@@ -106,15 +155,17 @@ class ClaudeConversationExporter
       return { sessions_exported: 0, total_messages: 0 }
     end
     
-    # Generate combined output
-    filename = generate_combined_filename(sessions)
-    output_path = File.join(@output_dir, filename)
+    # Generate output path if not already specified
+    if output_path.nil?
+      filename = generate_combined_filename(sessions)
+      output_path = File.join(output_dir, filename)
+    end
     
     File.write(output_path, format_combined_markdown(sessions))
     
     puts "\nExported #{sessions.length} conversations (#{total_messages} total messages) to #{output_path}"
     
-    { sessions_exported: sessions.length, total_messages: total_messages }
+    { sessions_exported: sessions.length, total_messages: total_messages, leaf_summaries: @leaf_summaries, output_file: output_path }
   end
 
   private
@@ -234,8 +285,12 @@ class ClaudeConversationExporter
       begin
         data = JSON.parse(line)
         
-        # Skip ignorable message types
-        next if data.key?('isApiErrorMessage') || data.key?('leafUuid') || data.key?('isMeta')
+        # Skip ignorable message types, but collect leaf summaries first
+        if data.key?('leafUuid')
+          extract_leaf_summary(data)
+          next
+        end
+        next if data.key?('isApiErrorMessage') || data.key?('isMeta')
         
         # Skip messages outside date range
         next unless message_in_date_range?(data['timestamp'])
@@ -382,8 +437,12 @@ class ClaudeConversationExporter
 
   # Test helper method - processes a single message data for testing
   def test_process_message(data, index = 0)
-    # Skip ignorable message types
-    return nil if data.key?('isApiErrorMessage') || data.key?('leafUuid') || data.key?('isMeta')
+    # Skip ignorable message types, but collect leaf summaries first
+    if data.key?('leafUuid')
+      extract_leaf_summary(data)
+      return nil
+    end
+    return nil if data.key?('isApiErrorMessage') || data.key?('isMeta')
     
     if data['type'] == 'thinking'
       format_thinking_message(data)
@@ -758,7 +817,8 @@ class ClaudeConversationExporter
 
   def format_combined_markdown(sessions)
     md = []
-    md << "# Claude Code Conversations"
+    title = get_markdown_title
+    md << "# #{title}"
     md << ""
     
     if sessions.length == 1
@@ -824,7 +884,8 @@ class ClaudeConversationExporter
 
   def format_markdown(session)
     md = []
-    md << "# Claude Code Conversation"
+    title = get_markdown_title
+    md << "# #{title}"
     md << ""
     md << "**Session:** `#{session[:session_id]}`"
     md << ""
@@ -902,4 +963,26 @@ class ClaudeConversationExporter
     content.gsub(@project_path + '/', '')
            .gsub(@project_path, '.')
   end
+
+  def extract_leaf_summary(data)
+    # Extract summary from leafUuid JSONL lines
+    if data['leafUuid'] && data['summary']
+      @leaf_summaries << {
+        uuid: data['leafUuid'],
+        summary: data['summary'],
+        timestamp: data['timestamp']
+      }
+    end
+  end
+
+  def get_markdown_title
+    # Use the first leaf summary as the markdown title
+    if @leaf_summaries.any?
+      return @leaf_summaries.first[:summary]
+    end
+    
+    # Fallback titles
+    "Claude Code Conversation"
+  end
+
 end

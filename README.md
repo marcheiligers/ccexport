@@ -72,8 +72,11 @@ puts "Total messages: #{result[:total_messages]}"
 # Export only today's conversations
 ./bin/ccexport --today
 
-# Custom output location
+# Custom output directory
 ./bin/ccexport --out /path/to/output
+
+# Output to specific file (creates matching .html for preview)
+./bin/ccexport --out myconversation.md --preview
 
 # Show timestamps with each message
 ./bin/ccexport --timestamps
@@ -93,7 +96,7 @@ puts "Total messages: #{result[:total_messages]}"
 - `--from DATE`: Filter messages from this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--to DATE`: Filter messages to this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--today`: Filter messages from today only (in your local timezone)
-- `--out PATH`: Custom output directory or file path (supports relative paths)
+- `--out PATH`: Custom output directory or specific file path (supports relative paths, use .md extension for specific file)
 - `--timestamps`: Show precise timestamps with each message for easy reference
 - `--preview`: Generate HTML preview and open in browser automatically
 - `--no-open`: Generate HTML preview without opening in browser (requires --preview)

@@ -100,7 +100,7 @@ RSpec.describe ClaudeConversationExporter do
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
       
-      expect(content).to include('# Claude Code Conversations')
+      expect(content).to include('# Claude Code Conversation')
       expect(content).to include('**Sessions:** 2')
       expect(content).to include('# Session 2')
       expect(content).to include('Hello, how are you?')
@@ -974,11 +974,12 @@ RSpec.describe ClaudeConversationExporter do
       allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
       allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with(/github_markdown_cheatsheet\.html$/).and_return(true)
-      allow(File).to receive(:readlines).with(/github_markdown_cheatsheet\.html$/).and_return(['<html><head><style>body{}</style></head>'] * 20)
+      allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(/preview_template\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
       allow(described_class).to receive(:system).with('open', anything)
 
-      result = described_class.generate_preview(output_dir)
+      result = described_class.generate_preview(output_dir, true, [])
       
       expect(result).to be_a(String)
       expect(result).to end_with('.html')
@@ -988,7 +989,7 @@ RSpec.describe ClaudeConversationExporter do
       FileUtils.rm_rf(output_dir)
       FileUtils.mkdir_p(output_dir)
       
-      result = described_class.generate_preview(output_dir)
+      result = described_class.generate_preview(output_dir, true, [])
       
       expect(result).to be false
     end
@@ -996,7 +997,19 @@ RSpec.describe ClaudeConversationExporter do
     it 'returns false when cmark-gfm is not available' do
       allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(false)
       
-      result = described_class.generate_preview(output_dir)
+      result = described_class.generate_preview(output_dir, true, [])
+      
+      expect(result).to be false
+    end
+
+    it 'returns false when ERB template is missing' do
+      allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
+      allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
+      allow($?).to receive(:exitstatus).and_return(0)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(false)
+      
+      result = described_class.generate_preview(output_dir, true, [])
       
       expect(result).to be false
     end
@@ -1007,16 +1020,45 @@ RSpec.describe ClaudeConversationExporter do
       allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
       allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with(/github_markdown_cheatsheet\.html$/).and_return(true)
-      allow(File).to receive(:readlines).with(/github_markdown_cheatsheet\.html$/).and_return(['<html><head><style>body{}</style></head>'] * 20)
+      allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(/preview_template\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
       
       # Ensure open command is not called
       expect(described_class).not_to receive(:system).with('open', anything)
 
-      result = described_class.generate_preview(output_dir, false)
+      result = described_class.generate_preview(output_dir, false, [])
       
       expect(result).to be_a(String)
       expect(result).to end_with('.html')
     end
+
+    it 'uses leaf summary as title when available' do
+      # Mock system commands
+      allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
+      allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
+      allow($?).to receive(:exitstatus).and_return(0)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(/preview_template\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
+      allow(described_class).to receive(:system).with('open', anything)
+      
+      leaf_summaries = [{
+        uuid: 'test-uuid',
+        summary: 'Ruby Claude Code Exporter Test',
+        timestamp: '2025-01-01T00:00:00Z'
+      }]
+
+      result = described_class.generate_preview(output_dir, true, leaf_summaries)
+      
+      expect(result).to be_a(String)
+      expect(result).to end_with('.html')
+      
+      # Check that the HTML file contains the leaf summary title
+      html_content = File.read(result)
+      expect(html_content).to include('<title>Ruby Claude Code Exporter Test</title>')
+    end
+
   end
 end
