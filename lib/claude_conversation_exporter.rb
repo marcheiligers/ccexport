@@ -12,7 +12,7 @@ class ClaudeConversationExporter
       new(project_path, output_dir, options).export
     end
 
-    def generate_preview(output_path_or_dir, open_browser = true, leaf_summaries = [])
+    def generate_preview(output_path_or_dir, open_browser = true, leaf_summaries = [], template_name = 'default')
       # Handle both directory and specific file paths
       if output_path_or_dir.end_with?('.md') && File.exist?(output_path_or_dir)
         # Specific markdown file provided
@@ -46,8 +46,14 @@ class ClaudeConversationExporter
         return false
       end
       
-      # Load ERB template
-      template_path = File.join(File.dirname(__FILE__), 'preview_template.html.erb')
+      # Load ERB template - support both template names and file paths
+      if template_name.include?('/') || template_name.end_with?('.erb')
+        # Full path provided
+        template_path = template_name
+      else
+        # Template name provided - look in templates directory
+        template_path = File.join(File.dirname(__FILE__), 'templates', "#{template_name}.html.erb")
+      end
       unless File.exist?(template_path)
         puts "Error: ERB template not found at #{template_path}"
         return false

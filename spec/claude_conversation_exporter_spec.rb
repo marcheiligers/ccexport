@@ -1007,7 +1007,7 @@ RSpec.describe ClaudeConversationExporter do
       allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
       allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(false)
+      allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(false)
       
       result = described_class.generate_preview(output_dir, true, [])
       
@@ -1058,6 +1058,150 @@ RSpec.describe ClaudeConversationExporter do
       # Check that the HTML file contains the leaf summary title
       html_content = File.read(result)
       expect(html_content).to include('<title>Ruby Claude Code Exporter Test</title>')
+    end
+
+    describe 'template parameter functionality' do
+      before do
+        # Mock cmark-gfm system calls
+        allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
+        allow(described_class).to receive(:`).and_return('<p>Test HTML content</p>')
+        allow($?).to receive(:exitstatus).and_return(0)
+        allow(described_class).to receive(:system).with('open', anything)
+      end
+
+      it 'uses default template when no template specified' do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with(/default\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
+        
+        result = described_class.generate_preview(output_dir, true, [])
+        
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+      end
+
+      it 'uses default template when "default" template name specified' do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with(/default\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
+        
+        result = described_class.generate_preview(output_dir, true, [], 'default')
+        
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+      end
+
+      it 'looks in templates directory for template name' do
+        # Create custom template in templates directory
+        templates_dir = File.join(File.dirname(__FILE__), '..', 'lib', 'templates')
+        FileUtils.mkdir_p(templates_dir)
+        custom_template_path = File.join(templates_dir, 'custom.html.erb')
+        
+        File.write(custom_template_path, <<~ERB)
+          <!DOCTYPE html>
+          <html>
+          <head><title><%= title %></title></head>
+          <body><%= content %></body>
+          </html>
+        ERB
+        
+        result = described_class.generate_preview(output_dir, true, [], 'custom')
+        
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+        
+        # Cleanup
+        File.delete(custom_template_path) if File.exist?(custom_template_path)
+      end
+
+      it 'uses full file path when path contains slash' do
+        custom_template_path = File.join(temp_dir, 'custom_template.html.erb')
+        File.write(custom_template_path, <<~ERB)
+          <!DOCTYPE html>
+          <html>
+          <head><title><%= title %></title></head>
+          <body><%= content %></body>
+          </html>
+        ERB
+        
+        result = described_class.generate_preview(output_dir, true, [], custom_template_path)
+        
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+      end
+
+      it 'uses full file path when path ends with .erb' do
+        custom_template_path = File.join(temp_dir, 'my_template.html.erb')
+        File.write(custom_template_path, <<~ERB)
+          <!DOCTYPE html>
+          <html>
+          <head><title><%= title %></title></head>
+          <body><%= content %></body>
+          </html>
+        ERB
+        
+        result = described_class.generate_preview(output_dir, true, [], custom_template_path)
+        
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+      end
+
+      it 'returns false when template name does not exist in templates directory' do
+        result = described_class.generate_preview(output_dir, true, [], 'nonexistent')
+        
+        expect(result).to be false
+      end
+
+      it 'returns false when template file path does not exist' do
+        result = described_class.generate_preview(output_dir, true, [], '/path/to/nonexistent.html.erb')
+        
+        expect(result).to be false
+      end
+
+      it 'correctly processes ERB variables in custom template' do
+        custom_template_path = File.join(temp_dir, 'test_template.html.erb')
+        File.write(custom_template_path, <<~ERB)
+          <!DOCTYPE html>
+          <html>
+          <head><title>TITLE: <%= title %></title></head>
+          <body>CONTENT: <%= content %></body>
+          </html>
+        ERB
+        
+        leaf_summaries = [{
+          uuid: 'test-uuid',
+          summary: 'Custom Test Title',
+          timestamp: '2024-01-01T12:00:00Z'
+        }]
+        
+        result = described_class.generate_preview(output_dir, true, leaf_summaries, custom_template_path)
+        
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+        
+        # Check that ERB variables were processed correctly
+        html_content = File.read(result)
+        expect(html_content).to include('TITLE: Custom Test Title')
+        expect(html_content).to include('CONTENT: <p>Test HTML content</p>')
+      end
+
+      it 'detects template name vs path correctly based on slash' do
+        # Test that it tries templates directory for name without slash
+        result = described_class.generate_preview(output_dir, true, [], 'custom')
+        expect(result).to be false # Should fail because template doesn't exist
+
+        # Test that it uses exact path when slash is present
+        result = described_class.generate_preview(output_dir, true, [], './custom')
+        expect(result).to be false # Should fail because file doesn't exist
+      end
+
+      it 'detects template name vs path correctly based on .erb extension' do
+        # Test that it uses exact path when .erb extension is present
+        result = described_class.generate_preview(output_dir, true, [], 'custom.html.erb')
+        expect(result).to be false # Should fail because file doesn't exist at current location
+      end
     end
 
   end

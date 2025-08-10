@@ -90,6 +90,12 @@ puts "Total messages: #{result[:total_messages]}"
 # Generate HTML preview without opening browser
 ./bin/ccexport --preview --no-open
 
+# Use custom template
+./bin/ccexport --preview --template mytheme
+
+# Use GitHub-style template
+./bin/ccexport --preview --template github
+
 # Combine multiple options
 ./bin/ccexport --in /path/to/project --from 2024-01-15 --out ./my-exports --timestamps --preview
 ```
@@ -104,7 +110,17 @@ puts "Total messages: #{result[:total_messages]}"
 - `--timestamps`: Show precise timestamps with each message for easy reference
 - `--preview`: Generate HTML preview and open in browser automatically
 - `--no-open`: Generate HTML preview without opening in browser (requires --preview)
+- `--template NAME_OR_PATH`: HTML template name (from templates dir) or file path (default: default)
 - `--help`: Show usage information
+
+### Available Templates
+
+The exporter includes several built-in templates:
+
+- **`default`**: Clean, modern styling with rounded corners and a warm color palette
+- **`github`**: Mimics GitHub's markdown rendering with GitHub's official color scheme and typography
+
+You can also create custom templates by placing `.html.erb` files in the `lib/templates/` directory or by specifying a full file path.
 
 ## Output Format
 

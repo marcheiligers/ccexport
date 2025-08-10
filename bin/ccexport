@@ -41,6 +41,10 @@ OptionParser.new do |parser|
     options[:no_open] = true
   end
   
+  parser.on("--template NAME_OR_PATH", "HTML template name (from templates dir) or file path (default: default)") do |template|
+    options[:template] = template
+  end
+  
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit
@@ -62,7 +66,8 @@ begin
   if options[:preview]
     # Use the actual output file if it was specified, otherwise use the directory
     preview_target = result[:output_file] || output_dir
-    ClaudeConversationExporter.generate_preview(preview_target, !options[:no_open], result[:leaf_summaries] || [])
+    template_name = options[:template] || 'default'
+    ClaudeConversationExporter.generate_preview(preview_target, !options[:no_open], result[:leaf_summaries] || [], template_name)
   end
   
   exit 0

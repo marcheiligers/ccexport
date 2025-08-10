@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en" data-color-mode="light" data-light-theme="light" data-dark-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <style>
+        /* GitHub color variables */
+        :root {
+            --color-fg-default: #1f2328;
+            --color-fg-muted: #656d76;
+            --color-fg-subtle: #6e7781;
+            --color-canvas-default: #ffffff;
+            --color-canvas-subtle: #f6f8fa;
+            --color-border-default: #d0d7de;
+            --color-border-muted: #d8dee4;
+            --color-neutral-muted: rgba(175,184,193,0.2);
+            --color-accent-fg: #0969da;
+            --color-accent-emphasis: #0969da;
+            --color-success-fg: #1a7f37;
+            --color-attention-fg: #9a6700;
+            --color-severe-fg: #bc4c00;
+            --color-danger-fg: #d1242f;
+            --color-done-fg: #8250df;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--color-fg-default);
+            background-color: var(--color-canvas-default);
+            margin: 0;
+            padding: 0;
+        }
+
+        .github-container {
+            max-width: 1012px;
+            margin: 0 auto;
+            padding: 0;
+            background: var(--color-canvas-default);
+            min-height: 100vh;
+        }
+
+        .github-header {
+            background: var(--color-canvas-subtle);
+            border-bottom: 1px solid var(--color-border-default);
+            padding: 16px 24px;
+            margin-bottom: 0;
+        }
+
+        .github-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-fg-default);
+        }
+
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background: var(--color-canvas-default);
+        }
+
+        /* Typography */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--color-fg-default);
+        }
+
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 1px solid var(--color-border-muted);
+            padding-bottom: 0.3em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid var(--color-border-muted);
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25em;
+        }
+
+        .markdown-body h4 {
+            font-size: 1em;
+        }
+
+        .markdown-body h5 {
+            font-size: 0.875em;
+        }
+
+        .markdown-body h6 {
+            font-size: 0.85em;
+            color: var(--color-fg-muted);
+        }
+
+        /* Paragraphs and text */
+        .markdown-body p {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body strong, .markdown-body b {
+            font-weight: 600;
+        }
+
+        .markdown-body em, .markdown-body i {
+            font-style: italic;
+        }
+
+        /* Code blocks */
+        .markdown-body pre, .markdown-body code {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 12px;
+        }
+
+        .markdown-body code {
+            background-color: var(--color-neutral-muted);
+            border-radius: 6px;
+            font-size: 85%;
+            margin: 0;
+            padding: 0.2em 0.4em;
+        }
+
+        .markdown-body pre {
+            background-color: var(--color-canvas-subtle);
+            border-radius: 6px;
+            font-size: 85%;
+            line-height: 1.45;
+            overflow: auto;
+            padding: 16px;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            border: 0;
+            display: inline;
+            line-height: inherit;
+            margin: 0;
+            max-width: auto;
+            overflow: visible;
+            padding: 0;
+            word-wrap: normal;
+        }
+
+        /* Blockquotes */
+        .markdown-body blockquote {
+            border-left: 0.25em solid var(--color-border-default);
+            color: var(--color-fg-muted);
+            margin: 0;
+            padding: 0 1em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body blockquote > :first-child {
+            margin-top: 0;
+        }
+
+        .markdown-body blockquote > :last-child {
+            margin-bottom: 0;
+        }
+
+        /* Lists */
+        .markdown-body ul, .markdown-body ol {
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-left: 2em;
+        }
+
+        .markdown-body li {
+            margin-top: 0.25em;
+        }
+
+        .markdown-body li + li {
+            margin-top: 0.25em;
+        }
+
+        .markdown-body li > p {
+            margin-top: 16px;
+        }
+
+        .markdown-body li > p:first-child {
+            margin-top: 0;
+        }
+
+        /* Tables */
+        .markdown-body table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            display: block;
+            width: max-content;
+            max-width: 100%;
+            overflow: auto;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body table tr {
+            background-color: var(--color-canvas-default);
+            border-top: 1px solid var(--color-border-muted);
+        }
+
+        .markdown-body table tr:nth-child(2n) {
+            background-color: var(--color-canvas-subtle);
+        }
+
+        .markdown-body table th, .markdown-body table td {
+            border: 1px solid var(--color-border-default);
+            padding: 6px 13px;
+        }
+
+        .markdown-body table th {
+            font-weight: 600;
+            background-color: var(--color-canvas-subtle);
+        }
+
+        /* Links */
+        .markdown-body a {
+            color: var(--color-accent-fg);
+            text-decoration: none;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-body a:visited {
+            color: var(--color-done-fg);
+        }
+
+        /* Horizontal rules */
+        .markdown-body hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: var(--color-border-default);
+            border: 0;
+        }
+
+        /* Details/Summary (GitHub collapsible content) */
+        .markdown-body details {
+            display: block;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body details summary {
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding: 8px 0;
+            color: var(--color-fg-default);
+        }
+
+        .markdown-body details summary:hover {
+            color: var(--color-accent-fg);
+        }
+
+        .markdown-body details[open] summary {
+            margin-bottom: 16px;
+        }
+
+        .markdown-body details > *:not(summary) {
+            margin-left: 16px;
+        }
+
+        /* GitHub file header styling */
+        .file-header {
+            background-color: var(--color-canvas-subtle);
+            border: 1px solid var(--color-border-default);
+            border-bottom: 0;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            padding: 8px 16px;
+        }
+
+        .file-header .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-fg-muted);
+            font-size: 12px;
+        }
+
+        .file-content {
+            border: 1px solid var(--color-border-default);
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            background: var(--color-canvas-default);
+        }
+
+        /* Session metadata styling for GitHub look */
+        .session-metadata {
+            background: var(--color-canvas-subtle);
+            border: 1px solid var(--color-border-default);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .session-metadata strong {
+            color: var(--color-fg-default);
+        }
+
+        /* Make conversation messages look more like GitHub discussions */
+        .markdown-body h2:has-text("👤"), .markdown-body h2:has-text("🤖") {
+            background: var(--color-canvas-subtle);
+            border: 1px solid var(--color-border-default);
+            border-radius: 6px 6px 0 0;
+            padding: 12px 16px;
+            margin: 24px 0 0 0;
+            border-bottom: none;
+            font-size: 16px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .markdown-body {
+                padding: 15px;
+            }
+            
+            .github-header {
+                padding: 12px 15px;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+            }
+            
+            .github-container {
+                box-shadow: none !important;
+            }
+            
+            .github-header {
+                background: white !important;
+                border-bottom: 1px solid #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="github-container">
+        <div class="github-header">
+            <h1><%= title %></h1>
+        </div>
+        <div class="file-content">
+            <div class="markdown-body">
+                <%= content %>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
