@@ -11,7 +11,7 @@ class ClaudeConversationExporter
       new(project_path, output_dir, options).export
     end
 
-    def generate_preview(output_dir)
+    def generate_preview(output_dir, open_browser = true)
       # Find the latest exported markdown file
       latest_md = Dir.glob(File.join(output_dir, '*.md')).sort.last
       
@@ -54,13 +54,15 @@ class ClaudeConversationExporter
       html_filename = latest_md.gsub(/\.md$/, '.html')
       File.write(html_filename, full_html)
       
-      puts "Preview saved to: #{html_filename}"
+      puts "HTML preview: #{html_filename}"
       
-      # Open in the default browser
-      system("open", html_filename)
-      puts "Opening in browser..."
+      # Open in the default browser only if requested
+      if open_browser
+        system("open", html_filename)
+        puts "Opening in browser..."
+      end
       
-      true
+      html_filename
     end
   end
 

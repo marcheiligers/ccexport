@@ -33,6 +33,10 @@ OptionParser.new do |parser|
     options[:preview] = true
   end
   
+  parser.on("--no-open", "Generate HTML preview without opening in browser (requires --preview)") do
+    options[:no_open] = true
+  end
+  
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit
@@ -40,12 +44,18 @@ OptionParser.new do |parser|
 end.parse!
 
 begin
+  # Validate options
+  if options[:no_open] && !options[:preview]
+    puts "Error: --no-open requires --preview"
+    exit 1
+  end
+  
   output_dir = options[:out] || 'claude-conversations'
   result = ClaudeConversationExporter.export(Dir.pwd, output_dir, options)
   
   # Generate preview if requested
   if options[:preview]
-    ClaudeConversationExporter.generate_preview(output_dir)
+    ClaudeConversationExporter.generate_preview(output_dir, !options[:no_open])
   end
   
   exit 0

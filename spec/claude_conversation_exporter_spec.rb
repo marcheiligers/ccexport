@@ -980,7 +980,8 @@ RSpec.describe ClaudeConversationExporter do
 
       result = described_class.generate_preview(output_dir)
       
-      expect(result).to be true
+      expect(result).to be_a(String)
+      expect(result).to end_with('.html')
     end
 
     it 'returns false when no markdown files exist' do
@@ -998,6 +999,24 @@ RSpec.describe ClaudeConversationExporter do
       result = described_class.generate_preview(output_dir)
       
       expect(result).to be false
+    end
+
+    it 'does not open browser when open_browser is false' do
+      # Mock system commands
+      allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
+      allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
+      allow($?).to receive(:exitstatus).and_return(0)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(/github_markdown_cheatsheet\.html$/).and_return(true)
+      allow(File).to receive(:readlines).with(/github_markdown_cheatsheet\.html$/).and_return(['<html><head><style>body{}</style></head>'] * 20)
+      
+      # Ensure open command is not called
+      expect(described_class).not_to receive(:system).with('open', anything)
+
+      result = described_class.generate_preview(output_dir, false)
+      
+      expect(result).to be_a(String)
+      expect(result).to end_with('.html')
     end
   end
 end

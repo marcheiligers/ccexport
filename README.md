@@ -81,6 +81,9 @@ puts "Total messages: #{result[:total_messages]}"
 # Generate HTML preview and open in browser
 ./bin/ccexport --preview
 
+# Generate HTML preview without opening browser
+./bin/ccexport --preview --no-open
+
 # Combine multiple options
 ./bin/ccexport --from 2024-01-15 --out ./my-exports --timestamps --preview
 ```
@@ -93,6 +96,7 @@ puts "Total messages: #{result[:total_messages]}"
 - `--out PATH`: Custom output directory or file path (supports relative paths)
 - `--timestamps`: Show precise timestamps with each message for easy reference
 - `--preview`: Generate HTML preview and open in browser automatically
+- `--no-open`: Generate HTML preview without opening in browser (requires --preview)
 - `--help`: Show usage information
 
 ## Output Format
