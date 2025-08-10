@@ -30,6 +30,24 @@ RSpec.describe ClaudeConversationExporter do
       FileUtils.rm_rf(claude_home)
       expect { described_class.new(project_path, output_dir) }.to raise_error(/Claude home directory not found/)
     end
+
+    it 'accepts date filtering options' do
+      options = { from: '2024-01-01', to: '2024-01-02' }
+      exporter = described_class.new(project_path, output_dir, options)
+      expect(exporter.instance_variable_get(:@options)).to eq(options)
+    end
+
+    it 'sets up today filter correctly' do
+      options = { today: true }
+      allow(Time).to receive(:now).and_return(Time.new(2024, 1, 15, 12, 0, 0, '+00:00'))
+      
+      exporter = described_class.new(project_path, output_dir, options)
+      from_time = exporter.instance_variable_get(:@from_time)
+      to_time = exporter.instance_variable_get(:@to_time)
+      
+      expect(from_time.strftime('%Y-%m-%d %H:%M:%S')).to eq('2024-01-15 00:00:00')
+      expect(to_time.strftime('%Y-%m-%d %H:%M:%S')).to eq('2024-01-15 23:59:59')
+    end
   end
 
   describe '#export' do
@@ -154,6 +172,44 @@ RSpec.describe ClaudeConversationExporter do
       expect(session_line).to match(/^\*\*Session:\*\* `test-session`$/)
       expect(started_line).to match(/^\*\*Started:\*\* /)
       expect(messages_line).to match(/^\*\*Messages:\*\* \d+ \(\d+ user, \d+ assistant\)$/)
+    end
+
+    it 'converts timestamps to local timezone in headers' do
+      # Use UTC timestamp in test data
+      utc_content = [
+        {
+          'message' => { 'role' => 'user', 'content' => 'UTC timestamp test' },
+          'timestamp' => '2024-01-15T15:30:00Z'  # 3:30 PM UTC
+        }
+      ].map(&:to_json).join("\n")
+      
+      File.write(session_file, utc_content)
+      
+      described_class.new(project_path, output_dir).export
+      
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+      content = File.read(markdown_file)
+      
+      # Should contain local time conversion (will vary by timezone)
+      started_line = content.lines.find { |line| line.include?('**Started:**') }
+      expect(started_line).to match(/\*\*Started:\*\* January 15, 2024 at \d{1,2}:\d{2} (AM|PM)/)
+      
+      # The exact time will depend on system timezone, but format should be correct
+      expect(started_line).not_to include('15:30')  # Should not show UTC format
+    end
+
+    it 'handles custom output directory from options' do
+      custom_output = File.join(temp_dir, 'custom_output')
+      options = { out: custom_output }
+      
+      # Mock the class method to pass options through
+      allow(described_class).to receive(:new).and_call_original
+      
+      result = described_class.new(project_path, custom_output, options).export
+      
+      expect(result[:sessions_exported]).to eq(1)
+      expect(Dir.glob(File.join(custom_output, '*.md')).length).to eq(1)
+      expect(Dir.exist?(custom_output)).to be true
     end
 
     it 'handles empty session files gracefully' do
@@ -775,6 +831,80 @@ RSpec.describe ClaudeConversationExporter do
       expect(result[:content]).to include('Let me help you with that.')
       expect(result[:content]).to include('> User needs clarification on the requirements.')
       expect(result[:content]).to include('What specific aspect would you like to focus on?')
+    end
+  end
+
+  describe 'date filtering' do
+    let(:exporter) { described_class.new(project_path, output_dir) }
+
+    describe '#message_in_date_range?' do
+      it 'returns true when no date filters are set' do
+        expect(exporter.send(:message_in_date_range?, '2024-01-01T10:00:00Z')).to be true
+      end
+
+      it 'filters messages by from date' do
+        options = { from: '2024-01-15' }
+        filtered_exporter = described_class.new(project_path, output_dir, options)
+        
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-10T10:00:00Z')).to be false
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-16T10:00:00Z')).to be true
+      end
+
+      it 'filters messages by to date' do
+        options = { to: '2024-01-15' }
+        filtered_exporter = described_class.new(project_path, output_dir, options)
+        
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-14T10:00:00Z')).to be true
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-16T10:00:00Z')).to be false
+      end
+
+      it 'filters messages by date range' do
+        options = { from: '2024-01-10', to: '2024-01-15' }
+        filtered_exporter = described_class.new(project_path, output_dir, options)
+        
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-05T10:00:00Z')).to be false
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-12T10:00:00Z')).to be true
+        expect(filtered_exporter.send(:message_in_date_range?, '2024-01-20T10:00:00Z')).to be false
+      end
+
+      it 'handles invalid timestamps gracefully' do
+        expect(exporter.send(:message_in_date_range?, 'invalid-timestamp')).to be true
+      end
+    end
+
+    describe 'date filtering integration' do
+      let(:session_file) { File.join(session_dir, 'filtered-session.jsonl') }
+
+      it 'filters messages during export with date range' do
+        filtered_content = [
+          {
+            'message' => { 'role' => 'user', 'content' => 'Message from Jan 5' },
+            'timestamp' => '2024-01-05T10:00:00Z'
+          },
+          {
+            'message' => { 'role' => 'user', 'content' => 'Message from Jan 15' },
+            'timestamp' => '2024-01-15T10:00:00Z'
+          },
+          {
+            'message' => { 'role' => 'user', 'content' => 'Message from Jan 25' },
+            'timestamp' => '2024-01-25T10:00:00Z'
+          }
+        ].map(&:to_json).join("\n")
+        
+        File.write(session_file, filtered_content)
+        
+        options = { from: '2024-01-10', to: '2024-01-20' }
+        result = described_class.new(project_path, output_dir, options).export
+        
+        expect(result[:total_messages]).to eq(1) # Only Jan 15 message
+        
+        markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+        content = File.read(markdown_file)
+        
+        expect(content).to include('Message from Jan 15')
+        expect(content).not_to include('Message from Jan 5')
+        expect(content).not_to include('Message from Jan 25')
+      end
     end
   end
 end

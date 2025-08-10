@@ -1,9 +1,39 @@
 #!/usr/bin/env ruby
 
 require_relative '../lib/claude_conversation_exporter'
+require 'optparse'
+require 'time'
+
+options = {}
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: ccexport [options]"
+  
+  parser.on("--from DATE", "Filter messages from this date (YYYY-MM-DD)") do |date|
+    options[:from] = date
+  end
+  
+  parser.on("--to DATE", "Filter messages to this date (YYYY-MM-DD)") do |date|
+    options[:to] = date
+  end
+  
+  parser.on("--today", "Filter messages from today only") do
+    options[:today] = true
+  end
+  
+  parser.on("--out PATH", "Output directory or file path (default: claude-conversations)") do |path|
+    options[:out] = path
+  end
+  
+  parser.on("-h", "--help", "Show this help message") do
+    puts parser
+    exit
+  end
+end.parse!
 
 begin
-  result = ClaudeConversationExporter.export
+  output_dir = options[:out] || 'claude-conversations'
+  result = ClaudeConversationExporter.export(Dir.pwd, output_dir, options)
   exit 0
 rescue StandardError => e
   puts "Error: #{e.message}"

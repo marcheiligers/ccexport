@@ -7,16 +7,18 @@ require 'set'
 
 class ClaudeConversationExporter
   class << self
-    def export(project_path = Dir.pwd, output_dir = 'claude-conversations')
-      new(project_path, output_dir).export
+    def export(project_path = Dir.pwd, output_dir = 'claude-conversations', options = {})
+      new(project_path, output_dir, options).export
     end
   end
 
-  def initialize(project_path = Dir.pwd, output_dir = 'claude-conversations')
+  def initialize(project_path = Dir.pwd, output_dir = 'claude-conversations', options = {})
     @project_path = File.expand_path(project_path)
     @output_dir = File.expand_path(output_dir)
     @claude_home = find_claude_home
     @compacted_conversation_processed = false
+    @options = options
+    setup_date_filters
   end
 
   def export
@@ -61,6 +63,54 @@ class ClaudeConversationExporter
   end
 
   private
+
+  def setup_date_filters
+    if @options[:today]
+      # Filter for today only in user's timezone
+      today = Time.now
+      @from_time = Time.new(today.year, today.month, today.day, 0, 0, 0, today.utc_offset)
+      @to_time = Time.new(today.year, today.month, today.day, 23, 59, 59, today.utc_offset)
+    else
+      if @options[:from]
+        begin
+          date = Date.parse(@options[:from])
+          @from_time = Time.new(date.year, date.month, date.day, 0, 0, 0, Time.now.utc_offset)
+        rescue ArgumentError
+          raise "Invalid from date format: #{@options[:from]}. Use YYYY-MM-DD format."
+        end
+      end
+      
+      if @options[:to]
+        begin
+          date = Date.parse(@options[:to])
+          @to_time = Time.new(date.year, date.month, date.day, 23, 59, 59, Time.now.utc_offset)
+        rescue ArgumentError
+          raise "Invalid to date format: #{@options[:to]}. Use YYYY-MM-DD format."
+        end
+      end
+    end
+  end
+
+  def message_in_date_range?(timestamp)
+    return true unless @from_time || @to_time
+    
+    begin
+      message_time = Time.parse(timestamp)
+      
+      if @from_time && message_time < @from_time
+        return false
+      end
+      
+      if @to_time && message_time > @to_time
+        return false
+      end
+      
+      true
+    rescue ArgumentError
+      # If timestamp is invalid, include the message
+      true
+    end
+  end
 
   def find_claude_home
     candidates = [
@@ -121,6 +171,9 @@ class ClaudeConversationExporter
         
         # Skip ignorable message types
         next if data.key?('isApiErrorMessage') || data.key?('leafUuid') || data.key?('isMeta')
+        
+        # Skip messages outside date range
+        next unless message_in_date_range?(data['timestamp'])
         
         if data.key?('isCompactSummary')
           # Extract clean compacted conversation (only if first one)
@@ -661,11 +714,11 @@ class ClaudeConversationExporter
     last_timestamp = sessions.map { |s| s[:last_timestamp] }.compact.max
     
     if first_timestamp
-      md << "**Started:** #{Time.parse(first_timestamp).strftime('%B %d, %Y at %I:%M %p')}"
+      md << "**Started:** #{Time.parse(first_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
     
     if last_timestamp
-      md << "**Last activity:** #{Time.parse(last_timestamp).strftime('%B %d, %Y at %I:%M %p')}"
+      md << "**Last activity:** #{Time.parse(last_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
     
     md << ""
@@ -683,7 +736,7 @@ class ClaudeConversationExporter
         md << "**Session ID:** `#{session[:session_id]}`"
         
         if session[:first_timestamp]
-          md << "**Started:** #{Time.parse(session[:first_timestamp]).strftime('%B %d, %Y at %I:%M %p')}"
+          md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
         end
         
         user_count = session[:messages].count { |m| m[:role] == 'user' }
@@ -712,11 +765,11 @@ class ClaudeConversationExporter
     md << ""
     
     if session[:first_timestamp]
-      md << "**Started:** #{Time.parse(session[:first_timestamp]).strftime('%B %d, %Y at %I:%M %p')}"
+      md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
     
     if session[:last_timestamp]
-      md << "**Last activity:** #{Time.parse(session[:last_timestamp]).strftime('%B %d, %Y at %I:%M %p')}"
+      md << "**Last activity:** #{Time.parse(session[:last_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
     
     user_count = session[:messages].count { |m| m[:role] == 'user' }

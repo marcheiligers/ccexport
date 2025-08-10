@@ -9,7 +9,7 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 - GitHub-flavored Markdown output optimized for readability
 - Automatically discovers Claude Code session files
 - Claude Desktop-inspired formatting with user/assistant message indicators
-- Comprehensive RSpec test suite with 36 tests
+- Comprehensive RSpec test suite with 61 tests
 
 ### Enhanced Tool Formatting
 - **Write Tool**: Shows relative file paths in summary with syntax-highlighted code blocks
@@ -22,6 +22,9 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 - **Smart Tool Pairing**: Automatically pairs tool_use with corresponding tool_result messages
 - **Syntax Highlighting**: Supports Ruby, JavaScript, Python, TypeScript, JSON, Markdown, YAML, Bash
 - **Robust Message Processing**: Handles edge cases like tool-only messages and system filtering
+- **Date Filtering**: Filter conversations by date range or today only (timezone-aware)
+- **Multiple Session Combining**: Automatically combines multiple sessions into single chronologically ordered output
+- **Thinking Message Support**: Displays thinking content with blockquotes and special emoji (🤖💭)
 
 ## Installation
 
@@ -56,17 +59,40 @@ puts "Total messages: #{result[:total_messages]}"
 ### Command Line Usage
 
 ```bash
-ruby bin/ccexport
+# Basic usage - export all conversations
+./bin/ccexport
+
+# Filter by date range
+./bin/ccexport --from 2024-01-01 --to 2024-01-31
+
+# Export only today's conversations
+./bin/ccexport --today
+
+# Custom output location
+./bin/ccexport --out /path/to/output
+
+# Combine multiple options
+./bin/ccexport --from 2024-01-15 --out ./my-exports
 ```
+
+#### Command Line Options
+
+- `--from YYYY-MM-DD`: Filter messages from this date (inclusive, in your local timezone)
+- `--to YYYY-MM-DD`: Filter messages to this date (inclusive, in your local timezone)
+- `--today`: Filter messages from today only (in your local timezone)
+- `--out PATH`: Custom output directory or file path (supports relative paths)
+- `--help`: Show usage information
 
 ## Output Format
 
 The exporter creates Markdown files with:
 
-- **Session metadata**: Session ID, timestamps, message counts
+- **Session metadata**: Session ID, timestamps (in local timezone), message counts
 - **User messages**: Marked with 👤 User
 - **Assistant messages**: Marked with 🤖 Assistant  
-- **Enhanced tool formatting**: Collapsible sections with syntax highlighting
+- **Thinking messages**: Marked with 🤖💭 Assistant with blockquoted content
+- **Tool use**: Marked with 🤖🔧 Assistant with collapsible sections and syntax highlighting
+- **Multiple sessions**: Combined into single file with clear session separators
 - **Relative paths**: All project paths converted to relative format
 - **Clean formatting**: Optimized for GitHub and other Markdown viewers
 
@@ -96,7 +122,7 @@ I'll create a Ruby script for you.
 
 **Write Tool:**
 ```markdown
-## 🔧 Tool Use
+## 🤖🔧 Assistant
 <details>
 <summary>Write lib/hello.rb</summary>
 
@@ -118,7 +144,7 @@ File created successfully at: lib/hello.rb
 
 **Edit Tool:**
 ```markdown
-## 🔧 Tool Use
+## 🤖🔧 Assistant
 <details>
 <summary>Edit lib/hello.rb</summary>
 
@@ -136,7 +162,7 @@ puts "Hello, Ruby!"
 
 **Bash Tool:**
 ```markdown
-## 🔧 Tool Use
+## 🤖🔧 Assistant
 <details>
 <summary>Bash: Run the Ruby script</summary>
 
@@ -144,6 +170,19 @@ puts "Hello, Ruby!"
 ruby lib/hello.rb
 ```
 </details>
+```
+
+**Thinking Messages:**
+```markdown
+## 🤖💭 Assistant
+
+I need to analyze this request carefully.
+
+> The user is asking for a Ruby script
+> I should create something simple and clear
+> Let me start with a basic Hello World example
+
+Based on your request, I'll create a simple Ruby script.
 ```
 
 ## Testing
@@ -165,7 +204,7 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - **Syntax highlighting**: Automatic language detection and code block formatting
 - **Path relativization**: Clean, portable output with relative paths
 - **Advanced tool pairing**: Smart matching of tool_use with tool_result messages
-- **Comprehensive testing**: 36 RSpec tests covering all functionality
+- **Comprehensive testing**: 61 RSpec tests covering all functionality
 - **Ruby-idiomatic**: Clean, maintainable Ruby code structure
 
 ## Requirements
