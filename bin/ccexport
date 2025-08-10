@@ -25,6 +25,10 @@ OptionParser.new do |parser|
     options[:out] = path
   end
   
+  parser.on("--timestamps", "Show timestamps with each message") do
+    options[:timestamps] = true
+  end
+  
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit

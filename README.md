@@ -65,22 +65,29 @@ puts "Total messages: #{result[:total_messages]}"
 # Filter by date range
 ./bin/ccexport --from 2024-01-01 --to 2024-01-31
 
+# Filter using timestamp format (copy from --timestamps output)
+./bin/ccexport --from "August 09, 2025 at 06:03:43 PM"
+
 # Export only today's conversations
 ./bin/ccexport --today
 
 # Custom output location
 ./bin/ccexport --out /path/to/output
 
+# Show timestamps with each message
+./bin/ccexport --timestamps
+
 # Combine multiple options
-./bin/ccexport --from 2024-01-15 --out ./my-exports
+./bin/ccexport --from 2024-01-15 --out ./my-exports --timestamps
 ```
 
 #### Command Line Options
 
-- `--from YYYY-MM-DD`: Filter messages from this date (inclusive, in your local timezone)
-- `--to YYYY-MM-DD`: Filter messages to this date (inclusive, in your local timezone)
+- `--from DATE`: Filter messages from this date (YYYY-MM-DD or timestamp format from --timestamps output)
+- `--to DATE`: Filter messages to this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--today`: Filter messages from today only (in your local timezone)
 - `--out PATH`: Custom output directory or file path (supports relative paths)
+- `--timestamps`: Show precise timestamps with each message for easy reference
 - `--help`: Show usage information
 
 ## Output Format

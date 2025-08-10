@@ -18,6 +18,7 @@ class ClaudeConversationExporter
     @claude_home = find_claude_home
     @compacted_conversation_processed = false
     @options = options
+    @show_timestamps = options[:timestamps] || false
     setup_date_filters
   end
 
@@ -72,22 +73,32 @@ class ClaudeConversationExporter
       @to_time = Time.new(today.year, today.month, today.day, 23, 59, 59, today.utc_offset)
     else
       if @options[:from]
-        begin
-          date = Date.parse(@options[:from])
-          @from_time = Time.new(date.year, date.month, date.day, 0, 0, 0, Time.now.utc_offset)
-        rescue ArgumentError
-          raise "Invalid from date format: #{@options[:from]}. Use YYYY-MM-DD format."
-        end
+        @from_time = parse_date_input(@options[:from], 'from', start_of_day: true)
       end
       
       if @options[:to]
-        begin
-          date = Date.parse(@options[:to])
-          @to_time = Time.new(date.year, date.month, date.day, 23, 59, 59, Time.now.utc_offset)
-        rescue ArgumentError
-          raise "Invalid to date format: #{@options[:to]}. Use YYYY-MM-DD format."
-        end
+        @to_time = parse_date_input(@options[:to], 'to', start_of_day: false)
       end
+    end
+  end
+
+  def parse_date_input(date_input, param_name, start_of_day:)
+    begin
+      # Try timestamp format first (from --timestamps output)
+      if date_input.match?(/\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2}:\d{2} (AM|PM)/)
+        parsed_time = Time.parse(date_input)
+        return parsed_time
+      end
+      
+      # Try YYYY-MM-DD format
+      date = Date.parse(date_input)
+      hour = start_of_day ? 0 : 23
+      minute = start_of_day ? 0 : 59
+      second = start_of_day ? 0 : 59
+      
+      Time.new(date.year, date.month, date.day, hour, minute, second, Time.now.utc_offset)
+    rescue ArgumentError
+      raise "Invalid #{param_name} date format: #{date_input}. Use YYYY-MM-DD or 'Month DD, YYYY at HH:MM:SS AM/PM' format."
     end
   end
 
@@ -799,17 +810,30 @@ class ClaudeConversationExporter
                             message[:content].start_with?('## 🤖🔧 Assistant')
     
     unless skip_assistant_heading
-      case message[:role]
-      when 'user'
-        lines << "## 👤 User"
-      when 'assistant'
-        lines << "## 🤖 Assistant"
-      when 'assistant_thinking'
-        lines << "## 🤖💭 Assistant"
-      when 'system'
-        lines << "## ⚙️ System"
+      # Format role header with optional timestamp
+      role_header = case message[:role]
+                   when 'user'
+                     "## 👤 User"
+                   when 'assistant'
+                     "## 🤖 Assistant"
+                   when 'assistant_thinking'
+                     "## 🤖💭 Assistant"
+                   when 'system'
+                     "## ⚙️ System"
+                   end
+      
+      # Add timestamp if requested and available
+      if @show_timestamps && message[:timestamp]
+        begin
+          local_time = Time.parse(message[:timestamp]).getlocal
+          timestamp_str = local_time.strftime('%B %d, %Y at %I:%M:%S %p')
+          role_header += " - #{timestamp_str}"
+        rescue ArgumentError
+          # Skip timestamp if parsing fails
+        end
       end
       
+      lines << role_header
       lines << ""
     end
     

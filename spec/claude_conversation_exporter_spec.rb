@@ -212,6 +212,31 @@ RSpec.describe ClaudeConversationExporter do
       expect(Dir.exist?(custom_output)).to be true
     end
 
+    it 'shows timestamps when timestamps option is enabled' do
+      options = { timestamps: true }
+      
+      result = described_class.new(project_path, output_dir, options).export
+      
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+      content = File.read(markdown_file)
+      
+      # Should include timestamps in message headers
+      expect(content).to match(/## 👤 User - \w+ \d{1,2}, \d{4} at \d{1,2}:\d{2}:\d{2} (AM|PM)/)
+      expect(content).to match(/## 🤖 Assistant - \w+ \d{1,2}, \d{4} at \d{1,2}:\d{2}:\d{2} (AM|PM)/)
+    end
+
+    it 'does not show timestamps by default' do
+      result = described_class.new(project_path, output_dir).export
+      
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+      content = File.read(markdown_file)
+      
+      # Should not include timestamps in message headers
+      expect(content).to match(/^## 👤 User$/)
+      expect(content).to match(/^## 🤖 Assistant$/)
+      expect(content).not_to match(/## 👤 User - \w+ \d{1,2}, \d{4}/)
+    end
+
     it 'handles empty session files gracefully' do
       File.write(session_file, '')
       
@@ -869,6 +894,31 @@ RSpec.describe ClaudeConversationExporter do
 
       it 'handles invalid timestamps gracefully' do
         expect(exporter.send(:message_in_date_range?, 'invalid-timestamp')).to be true
+      end
+    end
+
+    describe '#parse_date_input' do
+      let(:exporter) { described_class.new(project_path, output_dir) }
+
+      it 'parses YYYY-MM-DD format for start of day' do
+        result = exporter.send(:parse_date_input, '2024-01-15', 'from', start_of_day: true)
+        expect(result.strftime('%Y-%m-%d %H:%M:%S')).to eq('2024-01-15 00:00:00')
+      end
+
+      it 'parses YYYY-MM-DD format for end of day' do
+        result = exporter.send(:parse_date_input, '2024-01-15', 'to', start_of_day: false)
+        expect(result.strftime('%Y-%m-%d %H:%M:%S')).to eq('2024-01-15 23:59:59')
+      end
+
+      it 'parses timestamp format from --timestamps output' do
+        result = exporter.send(:parse_date_input, 'August 09, 2025 at 06:03:43 PM', 'from', start_of_day: true)
+        expect(result.strftime('%B %d, %Y at %I:%M:%S %p')).to eq('August 09, 2025 at 06:03:43 PM')
+      end
+
+      it 'raises error for invalid date format' do
+        expect { 
+          exporter.send(:parse_date_input, 'invalid-date', 'from', start_of_day: true) 
+        }.to raise_error(/Invalid from date format/)
       end
     end
 
