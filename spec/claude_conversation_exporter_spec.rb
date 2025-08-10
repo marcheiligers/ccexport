@@ -60,6 +60,72 @@ RSpec.describe ClaudeConversationExporter do
       expect(Dir.glob(File.join(output_dir, '*.md')).length).to eq(1)
     end
 
+    it 'combines multiple sessions into single output file' do
+      # Create second session file
+      second_session_file = File.join(session_dir, 'session2.jsonl')
+      second_jsonl_content = [
+        {
+          'message' => { 'role' => 'user', 'content' => 'Second session message' },
+          'timestamp' => '2024-01-02T10:00:00Z'
+        }
+      ].map(&:to_json).join("\n")
+      
+      File.write(second_session_file, second_jsonl_content)
+      
+      result = described_class.new(project_path, output_dir).export
+      
+      expect(result[:sessions_exported]).to eq(2)
+      expect(result[:total_messages]).to eq(3)
+      expect(Dir.glob(File.join(output_dir, '*.md')).length).to eq(1)
+      
+      # Check combined content
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+      content = File.read(markdown_file)
+      
+      expect(content).to include('# Claude Code Conversations')
+      expect(content).to include('**Sessions:** 2')
+      expect(content).to include('# Session 2')
+      expect(content).to include('Hello, how are you?')
+      expect(content).to include('Second session message')
+    end
+
+    it 'sorts sessions chronologically by first timestamp' do
+      # Create sessions with out-of-order timestamps
+      earlier_session_file = File.join(session_dir, 'earlier.jsonl')
+      later_session_file = File.join(session_dir, 'later.jsonl')
+      
+      # Later session (written first)
+      later_content = [
+        {
+          'message' => { 'role' => 'user', 'content' => 'Later session message' },
+          'timestamp' => '2024-01-03T10:00:00Z'
+        }
+      ].map(&:to_json).join("\n")
+      
+      # Earlier session (written second)
+      earlier_content = [
+        {
+          'message' => { 'role' => 'user', 'content' => 'Earlier session message' },
+          'timestamp' => '2024-01-01T10:00:00Z'
+        }
+      ].map(&:to_json).join("\n")
+      
+      File.write(later_session_file, later_content)
+      File.write(earlier_session_file, earlier_content)
+      
+      result = described_class.new(project_path, output_dir).export
+      
+      # Check that sessions are in chronological order in the output
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+      content = File.read(markdown_file)
+      
+      # Earlier message should appear before later message
+      earlier_pos = content.index('Earlier session message')
+      later_pos = content.index('Later session message')
+      
+      expect(earlier_pos).to be < later_pos
+    end
+
     it 'creates properly formatted markdown' do
       described_class.new(project_path, output_dir).export
       
@@ -163,6 +229,29 @@ RSpec.describe ClaudeConversationExporter do
       exporter = described_class.new(project_path, output_dir)
       title = exporter.send(:generate_title, [])
       expect(title).to eq('untitled')
+    end
+  end
+
+  describe '#generate_combined_filename' do
+    let(:exporter) { described_class.new(project_path, output_dir) }
+
+    it 'generates single session filename when only one session' do
+      sessions = [
+        { session_id: 'test-123', messages: [{ role: 'user', content: 'Test message' }] }
+      ]
+      
+      filename = exporter.send(:generate_combined_filename, sessions)
+      expect(filename).to match(/\d{8}-\d{6}-test-message-test-123\.md/)
+    end
+
+    it 'generates combined filename for multiple sessions' do
+      sessions = [
+        { session_id: 'session1', messages: [{ role: 'user', content: 'First message' }] },
+        { session_id: 'session2', messages: [{ role: 'user', content: 'Second message' }] }
+      ]
+      
+      filename = exporter.send(:generate_combined_filename, sessions)
+      expect(filename).to match(/\d{8}-\d{6}-first-message-combined-2-sessions\.md/)
     end
   end
 

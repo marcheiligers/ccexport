@@ -29,29 +29,35 @@ class ClaudeConversationExporter
     
     puts "Found #{session_files.length} session file(s)"
     
-    exported_count = 0
+    sessions = []
     total_messages = 0
     
     session_files.each do |session_file|
       session = process_session(session_file)
       next if session[:messages].empty?
       
-      filename = generate_filename(session)
-      output_path = File.join(@output_dir, filename)
-      
-      File.write(output_path, format_markdown(session))
-      
+      sessions << session
       puts "✓ #{session[:session_id]}: #{session[:messages].length} messages"
-      exported_count += 1
       total_messages += session[:messages].length
     end
     
-    puts "\nExported #{exported_count} conversations (#{total_messages} total messages) to #{@output_dir}/"
+    # Sort sessions by first timestamp to ensure chronological order
+    sessions.sort_by! { |session| session[:first_timestamp] || '1970-01-01T00:00:00Z' }
     
-    # Send notification as requested
-    system("notify \"Exported #{exported_count} conversations\" \"Claude Code\" \"Ping\"")
+    if sessions.empty?
+      puts "\nNo sessions to export"
+      return { sessions_exported: 0, total_messages: 0 }
+    end
     
-    { sessions_exported: exported_count, total_messages: total_messages }
+    # Generate combined output
+    filename = generate_combined_filename(sessions)
+    output_path = File.join(@output_dir, filename)
+    
+    File.write(output_path, format_combined_markdown(sessions))
+    
+    puts "\nExported #{sessions.length} conversations (#{total_messages} total messages) to #{output_path}"
+    
+    { sessions_exported: sessions.length, total_messages: total_messages }
   end
 
   private
@@ -601,6 +607,20 @@ class ClaudeConversationExporter
     "#{timestamp}-#{title}-#{session[:session_id]}.md"
   end
 
+  def generate_combined_filename(sessions)
+    timestamp = Time.now.strftime('%Y%m%d-%H%M%S')
+    
+    if sessions.length == 1
+      title = generate_title(sessions.first[:messages])
+      "#{timestamp}-#{title}-#{sessions.first[:session_id]}.md"
+    else
+      first_session = sessions.first
+      last_session = sessions.last
+      title = generate_title(first_session[:messages])
+      "#{timestamp}-#{title}-combined-#{sessions.length}-sessions.md"
+    end
+  end
+
   def generate_title(messages)
     first_user_message = messages.find { |m| m[:role] == 'user' }
     return 'untitled' unless first_user_message
@@ -616,6 +636,72 @@ class ClaudeConversationExporter
                   .downcase
     
     title.empty? ? 'untitled' : title[0, 50]
+  end
+
+  def format_combined_markdown(sessions)
+    md = []
+    md << "# Claude Code Conversations"
+    md << ""
+    
+    if sessions.length == 1
+      # Single session - use original format
+      return format_markdown(sessions.first)
+    end
+    
+    # Multiple sessions - combined format
+    total_messages = sessions.sum { |s| s[:messages].length }
+    total_user = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'user' } }
+    total_assistant = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'assistant' } }
+    
+    md << "**Sessions:** #{sessions.length}"
+    md << "**Total Messages:** #{total_messages} (#{total_user} user, #{total_assistant} assistant)"
+    md << ""
+    
+    first_timestamp = sessions.map { |s| s[:first_timestamp] }.compact.min
+    last_timestamp = sessions.map { |s| s[:last_timestamp] }.compact.max
+    
+    if first_timestamp
+      md << "**Started:** #{Time.parse(first_timestamp).strftime('%B %d, %Y at %I:%M %p')}"
+    end
+    
+    if last_timestamp
+      md << "**Last activity:** #{Time.parse(last_timestamp).strftime('%B %d, %Y at %I:%M %p')}"
+    end
+    
+    md << ""
+    md << "---"
+    md << ""
+    
+    # Process each session with separators
+    sessions.each_with_index do |session, session_index|
+      unless session_index == 0
+        md << ""
+        md << "---"
+        md << ""
+        md << "# Session #{session_index + 1}"
+        md << ""
+        md << "**Session ID:** `#{session[:session_id]}`"
+        
+        if session[:first_timestamp]
+          md << "**Started:** #{Time.parse(session[:first_timestamp]).strftime('%B %d, %Y at %I:%M %p')}"
+        end
+        
+        user_count = session[:messages].count { |m| m[:role] == 'user' }
+        assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
+        
+        md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
+        md << ""
+      end
+      
+      # Add messages for this session
+      session[:messages].each_with_index do |message, index|
+        md.concat(format_message(message, index + 1))
+        md << "" unless index == session[:messages].length - 1
+      end
+    end
+    
+    # Replace all absolute project paths with relative paths in the final output
+    make_paths_relative(md.join("\n"))
   end
 
   def format_markdown(session)
