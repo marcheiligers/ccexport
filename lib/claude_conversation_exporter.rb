@@ -522,6 +522,12 @@ class ClaudeConversationExporter
                .gsub("'", '&#39;')
   end
 
+  # Helper method to escape content for code blocks (combines both escaping approaches)
+  def escape_for_code_block(content)
+    # First escape HTML entities, then escape backticks
+    escape_backticks(escape_html(content))
+  end
+
 
   # Format any compacted conversation content as collapsible section
   def format_compacted_block(text)
@@ -635,7 +641,7 @@ class ClaudeConversationExporter
                    end
         
         markdown << "```#{language}"
-        markdown << escape_backticks(tool_input['content'])
+        markdown << escape_for_code_block(tool_input['content'])
         markdown << "```"
       else
         # Fallback to JSON if no content
@@ -653,7 +659,7 @@ class ClaudeConversationExporter
       command = tool_input['command'].gsub(@project_path, '.').gsub(@project_path.gsub('/', '\\/'), '.')
       
       markdown << "```bash"
-      markdown << escape_backticks(command)
+      markdown << escape_for_code_block(command)
       markdown << "```"
     # Special formatting for Edit tool
     elsif tool_name == 'Edit' && tool_input['file_path']
@@ -688,12 +694,12 @@ class ClaudeConversationExporter
       if tool_input['old_string'] && tool_input['new_string']
         markdown << "**Before:**"
         markdown << "```#{language}"
-        markdown << escape_backticks(tool_input['old_string'])
+        markdown << escape_for_code_block(tool_input['old_string'])
         markdown << "```"
         markdown << ""
         markdown << "**After:**"
         markdown << "```#{language}"
-        markdown << escape_backticks(tool_input['new_string'])
+        markdown << escape_for_code_block(tool_input['new_string'])
         markdown << "```"
       else
         # Fallback to JSON if old_string/new_string not available

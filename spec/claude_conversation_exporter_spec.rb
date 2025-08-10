@@ -560,7 +560,7 @@ RSpec.describe ClaudeConversationExporter do
         
         expect(result).to include('<summary>Write lib/example.rb</summary>')
         expect(result).to include('```ruby')
-        expect(result).to include('puts "hello"')
+        expect(result).to include('puts &quot;hello&quot;')
       end
 
       it 'detects various file extensions for syntax highlighting' do
@@ -628,7 +628,7 @@ RSpec.describe ClaudeConversationExporter do
         
         result = exporter.send(:format_tool_use, tool_use)
         
-        expect(result).to include('./bin/script && ./lib/test.rb')
+        expect(result).to include('./bin/script &amp;&amp; ./lib/test.rb')
       end
     end
 
