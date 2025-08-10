@@ -73,6 +73,23 @@ RSpec.describe ClaudeConversationExporter do
       expect(content).to include('I am doing well, thank you!')
     end
 
+    it 'formats session metadata with proper line breaks' do
+      described_class.new(project_path, output_dir).export
+      
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
+      content = File.read(markdown_file)
+      
+      # Check that session metadata appears on separate lines
+      lines = content.split("\n")
+      session_line = lines.find { |line| line.include?('**Session:**') }
+      started_line = lines.find { |line| line.include?('**Started:**') }
+      messages_line = lines.find { |line| line.include?('**Messages:**') }
+      
+      expect(session_line).to match(/^\*\*Session:\*\* `test-session`$/)
+      expect(started_line).to match(/^\*\*Started:\*\* /)
+      expect(messages_line).to match(/^\*\*Messages:\*\* \d+ \(\d+ user, \d+ assistant\)$/)
+    end
+
     it 'handles empty session files gracefully' do
       File.write(session_file, '')
       
@@ -171,13 +188,14 @@ RSpec.describe ClaudeConversationExporter do
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include('Hello there!')
-      expect(result).to include('How can I help?')
-      expect(result).to include('## 🔧 Tool Use')
-      expect(result).to include('<details>')
-      expect(result).to include('<summary>some_tool</summary>')
+      expect(result[:content]).to include('Hello there!')
+      expect(result[:content]).to include('How can I help?')
+      expect(result[:content]).to include('## 🤖🔧 Assistant')
+      expect(result[:content]).to include('<details>')
+      expect(result[:content]).to include('<summary>some_tool</summary>')
       # Tool result is now handled at message pairing level, not content array level
-      expect(result).to include('Tool executed successfully') # Still present as JSON
+      expect(result[:content]).to include('Tool executed successfully') # Still present as JSON
+      expect(result[:has_thinking]).to be false
     end
 
     it 'handles tool_use without tool_result' do
@@ -186,9 +204,10 @@ RSpec.describe ClaudeConversationExporter do
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include('## 🔧 Tool Use')
-      expect(result).to include('<summary>some_tool</summary>')
-      expect(result).not_to include('<summary>Tool Result</summary>')
+      expect(result[:content]).to include('## 🤖🔧 Assistant')
+      expect(result[:content]).to include('<summary>some_tool</summary>')
+      expect(result[:content]).not_to include('<summary>Tool Result</summary>')
+      expect(result[:has_thinking]).to be false
     end
 
     it 'preserves non-text, non-tool content as JSON' do
@@ -197,8 +216,9 @@ RSpec.describe ClaudeConversationExporter do
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include('image')
-      expect(result).to include('base64...')
+      expect(result[:content]).to include('image')
+      expect(result[:content]).to include('base64...')
+      expect(result[:has_thinking]).to be false
     end
   end
 
@@ -216,7 +236,7 @@ RSpec.describe ClaudeConversationExporter do
       
       result = exporter.send(:format_tool_use, tool_use, tool_result)
       
-      expect(result).to include('## 🔧 Tool Use')
+      expect(result).to include('## 🤖🔧 Assistant')
       expect(result).to include('<details>')
       expect(result).to include('<summary>Read</summary>')
       expect(result).to include('```json')
@@ -234,7 +254,7 @@ RSpec.describe ClaudeConversationExporter do
       
       result = exporter.send(:format_tool_use, tool_use)
       
-      expect(result).to include('## 🔧 Tool Use')
+      expect(result).to include('## 🤖🔧 Assistant')
       expect(result).to include('<summary>Write path/to/file.txt</summary>')
       expect(result).not_to include('<summary>Tool Result</summary>')
     end
@@ -253,7 +273,7 @@ RSpec.describe ClaudeConversationExporter do
       
       result = exporter.send(:format_tool_use, tool_use)
       
-      expect(result).to include('## 🔧 Tool Use')
+      expect(result).to include('## 🤖🔧 Assistant')
       expect(result).to include('<summary>TodoWrite</summary>')
       expect(result).to include('✅ First task')
       expect(result).to include('🔄 Second task')
@@ -280,9 +300,20 @@ RSpec.describe ClaudeConversationExporter do
       expect(result).to include('⏳ Pending task')
       expect(result).to include('❓ Unknown status task')
     end
+
+    it 'adds trailing spaces for proper markdown line breaks' do
+      todos = [
+        { 'content' => 'First task', 'status' => 'completed' },
+        { 'content' => 'Second task', 'status' => 'pending' }
+      ]
+      
+      result = exporter.send(:format_todo_list, todos)
+      
+      expect(result).to eq("✅ First task  \n⏳ Second task  ")
+    end
   end
 
-  describe '#extract_message with text extraction' do
+  describe '#test_process_message with text extraction' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
     it 'extracts text content from assistant array messages and formats tool use' do
@@ -297,9 +328,9 @@ RSpec.describe ClaudeConversationExporter do
         'timestamp' => '2024-01-01T10:00:00Z'
       }
       
-      result = exporter.send(:extract_message, data, 0)
+      result = exporter.send(:test_process_message, data, 0)
       expect(result[:content]).to include('Here is my response.')
-      expect(result[:content]).to include('## 🔧 Tool Use')
+      expect(result[:content]).to include('## 🤖🔧 Assistant')
       expect(result[:content]).to include('<summary>some_tool</summary>')
       expect(result[:role]).to eq('assistant')
     end
@@ -313,7 +344,7 @@ RSpec.describe ClaudeConversationExporter do
         'timestamp' => '2024-01-01T10:00:00Z'
       }
       
-      result = exporter.send(:extract_message, data, 0)
+      result = exporter.send(:test_process_message, data, 0)
       expect(result[:content]).to eq('This is my question')
       expect(result[:role]).to eq('user')
     end
@@ -501,7 +532,7 @@ RSpec.describe ClaudeConversationExporter do
     let(:exporter) { described_class.new }
 
     it 'does not filter out tool use content' do
-      tool_content = '## 🔧 Tool Use\n<details>\n<summary>Write</summary>'
+      tool_content = '## 🤖🔧 Assistant\n<details>\n<summary>Write</summary>'
       
       result = exporter.send(:system_generated?, tool_content)
       
@@ -531,7 +562,7 @@ RSpec.describe ClaudeConversationExporter do
         'timestamp' => '2025-01-01T00:00:00Z'
       }
       
-      result = exporter.send(:extract_message, data, 0)
+      result = exporter.send(:test_process_message, data, 0)
       
       expect(result).not_to be_nil
       expect(result[:tool_use_ids]).to eq(['tool123'])
@@ -551,9 +582,110 @@ RSpec.describe ClaudeConversationExporter do
         'timestamp' => '2025-01-01T00:00:00Z'
       }
       
-      result = exporter.send(:extract_message, data, 0)
+      result = exporter.send(:test_process_message, data, 0)
       
       expect(result[:tool_use_ids]).to eq(['tool123', 'tool456'])
+    end
+  end
+
+  describe 'linear processing approach' do
+    let(:exporter) { described_class.new(project_path, output_dir) }
+    
+    it 'skips ignorable message types' do
+      data = {
+        'isApiErrorMessage' => false,
+        'message' => { 'role' => 'assistant', 'content' => 'Some content' }
+      }
+      
+      result = exporter.send(:test_process_message, data, 0)
+      expect(result).to be_nil
+    end
+    
+    it 'processes isCompactSummary messages' do
+      data = {
+        'isCompactSummary' => true,
+        'message' => {
+          'role' => 'user',
+          'content' => [{'type' => 'text', 'text' => 'This session is being continued...'}]
+        },
+        'timestamp' => '2025-01-01T00:00:00Z'
+      }
+      
+      result = exporter.send(:test_process_message, data, 0)
+      expect(result).not_to be_nil
+      expect(result[:role]).to eq('user')
+      expect(result[:content]).to include('<details>')
+      expect(result[:content]).to include('Compacted')
+    end
+    
+    it 'identifies tool_use messages correctly' do
+      data = {
+        'requestId' => 'req_123',
+        'message' => {
+          'role' => 'assistant',
+          'content' => [
+            { 'type' => 'tool_use', 'id' => 'tool123', 'name' => 'Write' }
+          ]
+        }
+      }
+      
+      expect(exporter.send(:tool_use_message?, data)).to be true
+    end
+    
+    it 'identifies regular messages correctly' do
+      data = {
+        'message' => { 'role' => 'user', 'content' => 'Regular message' },
+        'timestamp' => '2025-01-01T00:00:00Z'
+      }
+      
+      expect(exporter.send(:regular_message?, data)).to be true
+    end
+    
+    it 'processes thinking messages correctly' do
+      data = {
+        'type' => 'thinking',
+        'thinking' => 'I need to analyze this problem carefully.',
+        'timestamp' => '2025-01-01T00:00:00Z'
+      }
+      
+      result = exporter.send(:test_process_message, data, 0)
+      expect(result).not_to be_nil
+      expect(result[:role]).to eq('assistant_thinking')
+      expect(result[:content]).to eq('> I need to analyze this problem carefully.')
+    end
+    
+    it 'handles multiline thinking content with blockquotes' do
+      data = {
+        'type' => 'thinking',
+        'thinking' => "First line of thinking.\nSecond line of analysis.\nThird line conclusion.",
+        'timestamp' => '2025-01-01T00:00:00Z'
+      }
+      
+      result = exporter.send(:test_process_message, data, 0)
+      expect(result).not_to be_nil
+      expect(result[:role]).to eq('assistant_thinking')
+      expect(result[:content]).to eq("> First line of thinking.\n> Second line of analysis.\n> Third line conclusion.")
+    end
+    
+    it 'processes messages with mixed text and thinking content' do
+      data = {
+        'message' => {
+          'role' => 'assistant',
+          'content' => [
+            { 'type' => 'text', 'text' => 'Let me help you with that.' },
+            { 'type' => 'thinking', 'thinking' => 'User needs clarification on the requirements.' },
+            { 'type' => 'text', 'text' => 'What specific aspect would you like to focus on?' }
+          ]
+        },
+        'timestamp' => '2025-01-01T00:00:00Z'
+      }
+      
+      result = exporter.send(:test_process_message, data, 0)
+      expect(result).not_to be_nil
+      expect(result[:role]).to eq('assistant_thinking')
+      expect(result[:content]).to include('Let me help you with that.')
+      expect(result[:content]).to include('> User needs clarification on the requirements.')
+      expect(result[:content]).to include('What specific aspect would you like to focus on?')
     end
   end
 end
