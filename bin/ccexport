@@ -29,6 +29,10 @@ OptionParser.new do |parser|
     options[:timestamps] = true
   end
   
+  parser.on("--preview", "Generate HTML preview and open in browser") do
+    options[:preview] = true
+  end
+  
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit
@@ -38,6 +42,12 @@ end.parse!
 begin
   output_dir = options[:out] || 'claude-conversations'
   result = ClaudeConversationExporter.export(Dir.pwd, output_dir, options)
+  
+  # Generate preview if requested
+  if options[:preview]
+    ClaudeConversationExporter.generate_preview(output_dir)
+  end
+  
   exit 0
 rescue StandardError => e
   puts "Error: #{e.message}"

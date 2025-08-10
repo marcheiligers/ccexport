@@ -957,4 +957,47 @@ RSpec.describe ClaudeConversationExporter do
       end
     end
   end
+
+  describe '.generate_preview' do
+    let(:output_dir) { File.join(temp_dir, 'output') }
+    let(:markdown_file) { File.join(output_dir, 'test.md') }
+    let(:css_file) { File.join(File.dirname(__FILE__), '..', 'docs', 'github_markdown_cheatsheet.html') }
+
+    before do
+      FileUtils.mkdir_p(output_dir)
+      File.write(markdown_file, "# Test Markdown\nSome content")
+    end
+
+    it 'generates HTML preview when cmark-gfm is available' do
+      # Mock system commands
+      allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
+      allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
+      allow($?).to receive(:exitstatus).and_return(0)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(/github_markdown_cheatsheet\.html$/).and_return(true)
+      allow(File).to receive(:readlines).with(/github_markdown_cheatsheet\.html$/).and_return(['<html><head><style>body{}</style></head>'] * 20)
+      allow(described_class).to receive(:system).with('open', anything)
+
+      result = described_class.generate_preview(output_dir)
+      
+      expect(result).to be true
+    end
+
+    it 'returns false when no markdown files exist' do
+      FileUtils.rm_rf(output_dir)
+      FileUtils.mkdir_p(output_dir)
+      
+      result = described_class.generate_preview(output_dir)
+      
+      expect(result).to be false
+    end
+
+    it 'returns false when cmark-gfm is not available' do
+      allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(false)
+      
+      result = described_class.generate_preview(output_dir)
+      
+      expect(result).to be false
+    end
+  end
 end

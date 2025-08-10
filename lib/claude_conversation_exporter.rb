@@ -10,6 +10,58 @@ class ClaudeConversationExporter
     def export(project_path = Dir.pwd, output_dir = 'claude-conversations', options = {})
       new(project_path, output_dir, options).export
     end
+
+    def generate_preview(output_dir)
+      # Find the latest exported markdown file
+      latest_md = Dir.glob(File.join(output_dir, '*.md')).sort.last
+      
+      if latest_md.nil?
+        puts "No markdown files found in #{output_dir}/"
+        return false
+      end
+      
+      puts "Creating preview for: #{File.basename(latest_md)}"
+      
+      # Check if cmark-gfm is available
+      unless system('which cmark-gfm > /dev/null 2>&1')
+        puts "Error: cmark-gfm not found. Install it with:"
+        puts "  brew install cmark-gfm"
+        return false
+      end
+      
+      # Get GitHub CSS from docs directory
+      css_file = File.join(File.dirname(__FILE__), '..', 'docs', 'github_markdown_cheatsheet.html')
+      unless File.exist?(css_file)
+        puts "Error: GitHub CSS file not found at #{css_file}"
+        return false
+      end
+      
+      # Get the first 20 lines from the GitHub markdown cheatsheet HTML file  
+      html_head = File.readlines(css_file)[0,20].join
+      
+      # Use cmark-gfm to convert markdown to HTML with --unsafe for collapsed sections
+      md_html = `cmark-gfm --unsafe --extension table --extension strikethrough --extension autolink --extension tagfilter --extension tasklist "#{latest_md}"`
+      
+      if $?.exitstatus != 0
+        puts "Error running cmark-gfm"
+        return false
+      end
+      
+      # Create the complete HTML content
+      full_html = html_head + "\n<div class=\"preview theme-light\">" + md_html + "\n</div></body></html>"
+      
+      # Create HTML file in output directory
+      html_filename = latest_md.gsub(/\.md$/, '.html')
+      File.write(html_filename, full_html)
+      
+      puts "Preview saved to: #{html_filename}"
+      
+      # Open in the default browser
+      system("open", html_filename)
+      puts "Opening in browser..."
+      
+      true
+    end
   end
 
   def initialize(project_path = Dir.pwd, output_dir = 'claude-conversations', options = {})

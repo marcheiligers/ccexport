@@ -9,7 +9,8 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 - GitHub-flavored Markdown output optimized for readability
 - Automatically discovers Claude Code session files
 - Claude Desktop-inspired formatting with user/assistant message indicators
-- Comprehensive RSpec test suite with 61 tests
+- Comprehensive RSpec test suite with 70 tests
+- HTML Preview Generation: Convert Markdown to HTML with GitHub styling
 
 ### Enhanced Tool Formatting
 - **Write Tool**: Shows relative file paths in summary with syntax-highlighted code blocks
@@ -77,8 +78,11 @@ puts "Total messages: #{result[:total_messages]}"
 # Show timestamps with each message
 ./bin/ccexport --timestamps
 
+# Generate HTML preview and open in browser
+./bin/ccexport --preview
+
 # Combine multiple options
-./bin/ccexport --from 2024-01-15 --out ./my-exports --timestamps
+./bin/ccexport --from 2024-01-15 --out ./my-exports --timestamps --preview
 ```
 
 #### Command Line Options
@@ -88,6 +92,7 @@ puts "Total messages: #{result[:total_messages]}"
 - `--today`: Filter messages from today only (in your local timezone)
 - `--out PATH`: Custom output directory or file path (supports relative paths)
 - `--timestamps`: Show precise timestamps with each message for easy reference
+- `--preview`: Generate HTML preview and open in browser automatically
 - `--help`: Show usage information
 
 ## Output Format
@@ -211,7 +216,8 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - **Syntax highlighting**: Automatic language detection and code block formatting
 - **Path relativization**: Clean, portable output with relative paths
 - **Advanced tool pairing**: Smart matching of tool_use with tool_result messages
-- **Comprehensive testing**: 61 RSpec tests covering all functionality
+- **Integrated HTML Preview**: Generate and open HTML previews with GitHub styling
+- **Comprehensive testing**: 70 RSpec tests covering all functionality
 - **Ruby-idiomatic**: Clean, maintainable Ruby code structure
 
 ## Requirements
@@ -219,6 +225,7 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - Ruby 2.7+
 - Claude Code installed and configured
 - RSpec (for testing)
+- cmark-gfm (for HTML preview generation): `brew install cmark-gfm`
 
 ## License
 
