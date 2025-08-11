@@ -1,0 +1,34 @@
+{
+  "parentUuid": "510776c3-bacd-4180-8710-214881053f51",
+  "isSidechain": false,
+  "userType": "external",
+  "cwd": "/Users/marcheiligers/Projects/ccexport",
+  "sessionId": "9bc89c9c-663a-4d3b-a107-5aab64eef72a",
+  "version": "1.0.69",
+  "gitBranch": "",
+  "message": {
+    "id": "msg_01M7wJe9FRnHkn7u6MYZztHU",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-sonnet-4-20250514",
+    "content": [
+      {
+        "type": "text",
+        "text": "Perfect! I've successfully implemented the tool use formatting with collapsed sections as requested. Here's what I implemented:\n\n**Key Features:**\n\n1. **Tool Use Detection**: The code now detects `tool_use` entries in assistant message content arrays\n2. **Tool Pairing**: When a `tool_use` is found, it looks for the immediately following `tool_result` and pairs them together\n3. **Collapsed Sections**: Uses GitHub's `<details>/<summary>` tags from the cheatsheet\n4. **Formatted Output**: Each tool use gets:\n   - A \"## Tool Use\" header\n   - A collapsed section with the tool name as the summary\n   - Input parameters displayed in a JSON code block\n   - A nested collapsed section for tool results (if present)\n\n**Example Output:**\n```markdown\n## Tool Use\n<details>\n<summary>Read</summary>\n\n```json\n{\n  \"file_path\": \"/path/to/file.txt\"\n}\n```\n\n<details>\n<summary>Tool Result</summary>\n\n```\nFile contents here\n```\n</details>\n</details>\n```\n\n**Test Coverage:**\n- All 20 tests pass\n- Tests verify tool use formatting with and without results\n- Tests ensure text content is still extracted cleanly\n- Tests confirm non-text content is preserved appropriately\n\nThe tool use sections are now cleanly formatted with collapsible sections that show the tool name prominently and hide the technical details until clicked. Ready to continue customizing the formatting further!"
+      }
+    ],
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "usage": {
+      "input_tokens": 0,
+      "cache_creation_input_tokens": 366,
+      "cache_read_input_tokens": 63829,
+      "output_tokens": 341,
+      "service_tier": "standard"
+    }
+  },
+  "requestId": "req_011CRvdsiLFVHRXRqwCr9Vro",
+  "type": "assistant",
+  "uuid": "7eccbb0a-c329-49d9-b784-a9865ecca64b",
+  "timestamp": "2025-08-08T17:28:09.775Z"
+}

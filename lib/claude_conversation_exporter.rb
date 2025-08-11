@@ -411,6 +411,9 @@ class ClaudeConversationExporter
     
     return nil if processed_content.strip.empty?
     
+    # Fix nested backticks in regular content
+    processed_content = fix_nested_backticks_in_content(processed_content)
+    
     # Skip messages that contain compacted conversation phrases
     # Only official isCompactSummary messages should contain these
     text_to_check = processed_content.to_s
@@ -528,10 +531,33 @@ class ClaudeConversationExporter
                .gsub("'", '&#39;')
   end
 
+  # Helper method to determine how many backticks are needed to wrap content
+  def determine_backticks_needed(content)
+    # Find the longest sequence of consecutive backticks in the content
+    max_backticks = content.scan(/`+/).map(&:length).max || 0
+    
+    # Use one more than the maximum found, with a minimum of 3
+    needed = [max_backticks + 1, 3].max
+    '`' * needed
+  end
+
   # Helper method to escape content for code blocks (combines both escaping approaches)
   def escape_for_code_block(content)
-    # First escape HTML entities, then escape backticks
-    escape_backticks(escape_html(content))
+    # First escape HTML entities, but don't escape backticks since we're handling them
+    # with dynamic backtick counts
+    escape_html(content)
+  end
+
+  # Fix nested backticks in regular message content
+  def fix_nested_backticks_in_content(content)
+    require_relative 'markdown_code_block_parser'
+    
+    parser = MarkdownCodeBlockParser.new(content)
+    parser.parse
+    
+    # Use Opus's parser to escape nested blocks
+    # Even though the pairing isn't perfect, it produces balanced HTML
+    parser.send(:escape_nested_blocks)
   end
 
 
@@ -646,9 +672,11 @@ class ClaudeConversationExporter
                      ''
                    end
         
-        markdown << "```#{language}"
+        # Use appropriate number of backticks to wrap content that may contain backticks
+        backticks = determine_backticks_needed(tool_input['content'])
+        markdown << "#{backticks}#{language}"
         markdown << escape_for_code_block(tool_input['content'])
-        markdown << "```"
+        markdown << backticks
       else
         # Fallback to JSON if no content
         markdown << "```json"
@@ -664,9 +692,10 @@ class ClaudeConversationExporter
       # Make paths relative in the command
       command = tool_input['command'].gsub(@project_path, '.').gsub(@project_path.gsub('/', '\\/'), '.')
       
-      markdown << "```bash"
+      backticks = determine_backticks_needed(command)
+      markdown << "#{backticks}bash"
       markdown << escape_for_code_block(command)
-      markdown << "```"
+      markdown << backticks
     # Special formatting for Edit tool
     elsif tool_name == 'Edit' && tool_input['file_path']
       # Extract relative path from the file_path
@@ -698,15 +727,18 @@ class ClaudeConversationExporter
                  end
       
       if tool_input['old_string'] && tool_input['new_string']
+        old_backticks = determine_backticks_needed(tool_input['old_string'])
+        new_backticks = determine_backticks_needed(tool_input['new_string'])
+        
         markdown << "**Before:**"
-        markdown << "```#{language}"
+        markdown << "#{old_backticks}#{language}"
         markdown << escape_for_code_block(tool_input['old_string'])
-        markdown << "```"
+        markdown << old_backticks
         markdown << ""
         markdown << "**After:**"
-        markdown << "```#{language}"
+        markdown << "#{new_backticks}#{language}"
         markdown << escape_for_code_block(tool_input['new_string'])
-        markdown << "```"
+        markdown << new_backticks
       else
         # Fallback to JSON if old_string/new_string not available
         markdown << "```json"
