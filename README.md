@@ -254,6 +254,10 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - RSpec (for testing)
 - cmark-gfm (for HTML preview generation): `brew install cmark-gfm`
 
+## Example Files
+
+The `VIBE.md` and `VIBE.html` files in this repository are examples generated from the actual Claude Code conversation that was used to build this tool. They demonstrate the full export functionality and formatting capabilities.
+
 ## License
 
 MIT License - feel free to use and modify as needed.

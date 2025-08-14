@@ -23,29 +23,29 @@ class ClaudeConversationExporter
         output_dir = output_path_or_dir
         latest_md = Dir.glob(File.join(output_dir, '*.md')).sort.last
       end
-      
+
       if latest_md.nil? || !File.exist?(latest_md)
         puts "No markdown files found in #{output_dir}/"
         return false
       end
-      
+
       puts "Creating preview for: #{File.basename(latest_md)}"
-      
+
       # Check if cmark-gfm is available
       unless system('which cmark-gfm > /dev/null 2>&1')
         puts "Error: cmark-gfm not found. Install it with:"
         puts "  brew install cmark-gfm"
         return false
       end
-      
+
       # Use cmark-gfm to convert markdown to HTML with --unsafe for collapsed sections
       md_html = `cmark-gfm --unsafe --extension table --extension strikethrough --extension autolink --extension tagfilter --extension tasklist "#{latest_md}"`
-      
+
       if $?.exitstatus != 0
         puts "Error running cmark-gfm"
         return false
       end
-      
+
       # Load ERB template - support both template names and file paths
       if template_name.include?('/') || template_name.end_with?('.erb')
         # Full path provided
@@ -58,27 +58,27 @@ class ClaudeConversationExporter
         puts "Error: ERB template not found at #{template_path}"
         return false
       end
-      
+
       template = File.read(template_path)
       erb = ERB.new(template)
-      
+
       # Create the complete HTML content using ERB template
       content = md_html
       title = extract_title_from_summaries_or_markdown(latest_md, leaf_summaries)
       full_html = erb.result(binding)
-      
+
       # Create HTML file in output directory
       html_filename = latest_md.gsub(/\.md$/, '.html')
       File.write(html_filename, full_html)
-      
+
       puts "HTML preview: #{html_filename}"
-      
+
       # Open in the default browser only if requested
       if open_browser
         system("open", html_filename)
         puts "Opening in browser..."
       end
-      
+
       html_filename
     end
 
@@ -88,11 +88,11 @@ class ClaudeConversationExporter
         # Use the first (oldest) summary as the main title
         return leaf_summaries.first[:summary]
       end
-      
+
       # Fallback: read the markdown file and extract title from content
       begin
         content = File.read(markdown_file)
-        
+
         # Look for the first user message content as fallback
         if content.match(/## 👤 User\s*\n\n(.+?)(?:\n\n|$)/m)
           first_user_message = $1.strip
@@ -100,7 +100,7 @@ class ClaudeConversationExporter
           title_words = first_user_message.split(/\s+/).first(8).join(' ')
           return title_words.length > 60 ? title_words[0..57] + '...' : title_words
         end
-        
+
         # Final fallback
         "Claude Code Conversation"
       rescue
@@ -117,13 +117,14 @@ class ClaudeConversationExporter
     @options = options
     @show_timestamps = options[:timestamps] || false
     @leaf_summaries = []
+    @skipped_messages = []
     setup_date_filters
   end
 
   def export
     session_dir = find_session_directory
     session_files = Dir.glob(File.join(session_dir, '*.jsonl')).sort
-    
+
     raise "No session files found in #{session_dir}" if session_files.empty?
 
     # Handle output path - could be a directory or specific file
@@ -138,43 +139,74 @@ class ClaudeConversationExporter
       output_dir = @output_dir
       output_path = nil  # Will be generated later
     end
-    
-    puts "Found #{session_files.length} session file(s)"
-    
+
+    puts "Found #{session_files.length} session file(s) in #{session_dir}"
+
     sessions = []
     total_messages = 0
-    
+
     session_files.each do |session_file|
       session = process_session(session_file)
       next if session[:messages].empty?
-      
+
       sessions << session
       puts "✓ #{session[:session_id]}: #{session[:messages].length} messages"
       total_messages += session[:messages].length
     end
-    
+
     # Sort sessions by first timestamp to ensure chronological order
     sessions.sort_by! { |session| session[:first_timestamp] || '1970-01-01T00:00:00Z' }
-    
+
     if sessions.empty?
       puts "\nNo sessions to export"
       return { sessions_exported: 0, total_messages: 0 }
     end
-    
+
     # Generate output path if not already specified
     if output_path.nil?
       filename = generate_combined_filename(sessions)
       output_path = File.join(output_dir, filename)
     end
-    
+
     File.write(output_path, format_combined_markdown(sessions))
-    
+
+    # Write skip log if there were any skipped messages
+    write_skip_log(output_path)
+
     puts "\nExported #{sessions.length} conversations (#{total_messages} total messages) to #{output_path}"
-    
+
     { sessions_exported: sessions.length, total_messages: total_messages, leaf_summaries: @leaf_summaries, output_file: output_path }
   end
 
   private
+
+  def track_skipped_message(line_index, reason, data = nil)
+    return if reason == 'outside date range' # Don't log date range skips
+
+    skip_entry = {
+      line: line_index + 1,
+      reason: reason
+    }
+
+    # Include the full JSON data if available
+    skip_entry[:data] = data if data
+
+    @skipped_messages << skip_entry
+  end
+
+  def write_skip_log(output_path)
+    return if @skipped_messages.empty?
+
+    log_path = output_path.gsub(/\.md$/, '_skipped.jsonl')
+
+    File.open(log_path, 'w') do |f|
+      @skipped_messages.each do |skip|
+        f.puts JSON.generate(skip)
+      end
+    end
+
+    puts "Skipped #{@skipped_messages.length} messages (see #{File.basename(log_path)})"
+  end
 
   def setup_date_filters
     if @options[:today]
@@ -186,7 +218,7 @@ class ClaudeConversationExporter
       if @options[:from]
         @from_time = parse_date_input(@options[:from], 'from', start_of_day: true)
       end
-      
+
       if @options[:to]
         @to_time = parse_date_input(@options[:to], 'to', start_of_day: false)
       end
@@ -200,13 +232,13 @@ class ClaudeConversationExporter
         parsed_time = Time.parse(date_input)
         return parsed_time
       end
-      
+
       # Try YYYY-MM-DD format
       date = Date.parse(date_input)
       hour = start_of_day ? 0 : 23
       minute = start_of_day ? 0 : 59
       second = start_of_day ? 0 : 59
-      
+
       Time.new(date.year, date.month, date.day, hour, minute, second, Time.now.utc_offset)
     rescue ArgumentError
       raise "Invalid #{param_name} date format: #{date_input}. Use YYYY-MM-DD or 'Month DD, YYYY at HH:MM:SS AM/PM' format."
@@ -215,18 +247,18 @@ class ClaudeConversationExporter
 
   def message_in_date_range?(timestamp)
     return true unless @from_time || @to_time
-    
+
     begin
       message_time = Time.parse(timestamp)
-      
+
       if @from_time && message_time < @from_time
         return false
       end
-      
+
       if @to_time && message_time > @to_time
         return false
       end
-      
+
       true
     rescue ArgumentError
       # If timestamp is invalid, include the message
@@ -239,29 +271,29 @@ class ClaudeConversationExporter
       File.join(Dir.home, '.claude'),
       File.join(Dir.home, '.config', 'claude')
     ]
-    
+
     claude_home = candidates.find { |path| Dir.exist?(File.join(path, 'projects')) }
     raise "Claude home directory not found. Searched: #{candidates.join(', ')}" unless claude_home
-    
+
     claude_home
   end
 
   def find_session_directory
     encoded_path = encode_path(@project_path)
     session_dir = File.join(@claude_home, 'projects', encoded_path)
-    
+
     return session_dir if Dir.exist?(session_dir)
-    
+
     # Fallback: search for directories containing project name
     project_name = File.basename(@project_path)
     projects_dir = File.join(@claude_home, 'projects')
-    
+
     candidates = Dir.entries(projects_dir)
                    .select { |dir| dir.include?(project_name) && Dir.exist?(File.join(projects_dir, dir)) }
                    .map { |dir| File.join(projects_dir, dir) }
-    
+
     raise "No Claude sessions found for project: #{@project_path}" if candidates.empty?
-    
+
     candidates.first
   end
 
@@ -272,7 +304,7 @@ class ClaudeConversationExporter
   def process_session(session_file)
     session_id = File.basename(session_file, '.jsonl')
     messages = process_messages_linearly(session_file)
-    
+
     {
       session_id: session_id,
       messages: messages,
@@ -284,23 +316,31 @@ class ClaudeConversationExporter
   def process_messages_linearly(jsonl_file)
     messages = []
     pending_tool_use = nil
-    
+
     File.readlines(jsonl_file, chomp: true).each_with_index do |line, index|
       next if line.strip.empty?
-      
+
       begin
         data = JSON.parse(line)
-        
+
         # Skip ignorable message types, but collect leaf summaries first
         if data.key?('leafUuid')
           extract_leaf_summary(data)
+          track_skipped_message(index, 'leaf summary message', data)
           next
         end
-        next if data.key?('isApiErrorMessage') || data.key?('isMeta')
-        
+
+        if data.key?('isApiErrorMessage') || data.key?('isMeta')
+          track_skipped_message(index, 'api error or meta message', data)
+          next
+        end
+
         # Skip messages outside date range
-        next unless message_in_date_range?(data['timestamp'])
-        
+        unless message_in_date_range?(data['timestamp'])
+          track_skipped_message(index, 'outside date range', data)
+          next
+        end
+
         if data.key?('isCompactSummary')
           # Extract clean compacted conversation (only if first one)
           unless @compacted_conversation_processed
@@ -319,14 +359,19 @@ class ClaudeConversationExporter
             pending_tool_use = data # Hold for pairing with next toolUseResult
           else
             message = format_regular_message(data)
-            messages << message if message
+            if message
+              messages << message
+            else
+              track_skipped_message(index, 'empty or system-generated message', data)
+            end
           end
         end
       rescue JSON::ParserError => e
+        track_skipped_message(index, "invalid JSON: #{e.message}", nil)
         puts "Warning: Skipping invalid JSON at line #{index + 1}: #{e.message}"
       end
     end
-    
+
     messages
   end
 
@@ -340,14 +385,14 @@ class ClaudeConversationExporter
     return false unless data['message']
     content = data['message']['content']
     return false unless content.is_a?(Array)
-    
+
     content.any? { |item| item.is_a?(Hash) && item['type'] == 'tool_use' }
   end
 
   def format_compacted_conversation(data)
     content = data.dig('message', 'content')
     text = content.is_a?(Array) ? content.first['text'] : content
-    
+
     {
       role: 'user',
       content: format_compacted_block(text),
@@ -363,10 +408,10 @@ class ClaudeConversationExporter
 
     # Extract tool_result
     tool_result = tool_result_data.dig('message', 'content')&.first
-    
+
     # Format as combined tool use + result
     content = format_tool_use(tool_uses.first, tool_result)
-    
+
     {
       role: 'assistant',
       content: content,
@@ -377,11 +422,11 @@ class ClaudeConversationExporter
 
   def format_thinking_message(data)
     thinking_content = data['thinking']
-    
+
     # Format thinking content as blockquote
     thinking_lines = thinking_content.split("\n").map { |line| "> #{line}" }
     formatted_content = thinking_lines.join("\n")
-    
+
     {
       role: 'assistant_thinking',
       content: formatted_content,
@@ -393,14 +438,14 @@ class ClaudeConversationExporter
   def format_regular_message(data)
     role = data.dig('message', 'role')
     content = data.dig('message', 'content')
-    
+
     return nil if system_generated_data?(data)
-    
+
     if content.is_a?(Array)
       result = extract_text_content(content)
       processed_content = result[:content]
       has_thinking = result[:has_thinking]
-      
+
       # Update role if message contains thinking
       role = 'assistant_thinking' if has_thinking && role == 'assistant'
     elsif content.is_a?(String)
@@ -408,20 +453,20 @@ class ClaudeConversationExporter
     else
       processed_content = JSON.pretty_generate(content)
     end
-    
+
     return nil if processed_content.strip.empty?
-    
+
     # Fix nested backticks in regular content
     processed_content = fix_nested_backticks_in_content(processed_content)
-    
+
     # Skip messages that contain compacted conversation phrases
     # Only official isCompactSummary messages should contain these
-    text_to_check = processed_content.to_s
-    has_compacted_phrases = text_to_check.include?('Primary Request and Intent:') ||
-                           text_to_check.include?('This session is being continued from a previous conversation')
-    
-    return nil if has_compacted_phrases
-    
+    # text_to_check = processed_content.to_s
+    # has_compacted_phrases = text_to_check.include?('Primary Request and Intent:') ||
+    #                        text_to_check.include?('This session is being continued from a previous conversation')
+
+    # return nil if has_compacted_phrases
+
     {
       role: role,
       content: processed_content,
@@ -432,7 +477,7 @@ class ClaudeConversationExporter
 
   def system_generated_data?(data)
     content = data.dig('message', 'content')
-    
+
     if content.is_a?(Array)
       text_content = content.select { |item| item['type'] == 'text' }.map { |item| item['text'] }.join(' ')
     elsif content.is_a?(String)
@@ -440,7 +485,7 @@ class ClaudeConversationExporter
     else
       return false
     end
-    
+
     system_generated?(text_content)
   end
 
@@ -452,7 +497,7 @@ class ClaudeConversationExporter
       return nil
     end
     return nil if data.key?('isApiErrorMessage') || data.key?('isMeta')
-    
+
     if data['type'] == 'thinking'
       format_thinking_message(data)
     elsif data.key?('isCompactSummary')
@@ -472,9 +517,9 @@ class ClaudeConversationExporter
         content = data.dig('message', 'content')
         tool_use_ids = content.select { |item| item.is_a?(Hash) && item['type'] == 'tool_use' }
                               .map { |item| item['id'] }
-        
+
         result = extract_text_content(content)
-        
+
         # Return tool use message for testing
         {
           role: 'assistant',
@@ -493,7 +538,7 @@ class ClaudeConversationExporter
   def extract_text_content(content_array)
     parts = []
     has_thinking = false
-    
+
     content_array.each do |item|
       if item.is_a?(Hash) && item['type'] == 'text' && item['text']
         parts << item['text']
@@ -510,10 +555,10 @@ class ClaudeConversationExporter
         parts << JSON.pretty_generate(item)
       end
     end
-    
+
     # If this message contains thinking, it needs special role handling
     content = parts.join("\n\n")
-    
+
     { content: content, has_thinking: has_thinking }
   end
 
@@ -535,7 +580,7 @@ class ClaudeConversationExporter
   def determine_backticks_needed(content)
     # Find the longest sequence of consecutive backticks in the content
     max_backticks = content.scan(/`+/).map(&:length).max || 0
-    
+
     # Use one more than the maximum found, with a minimum of 3
     needed = [max_backticks + 1, 3].max
     '`' * needed
@@ -551,10 +596,10 @@ class ClaudeConversationExporter
   # Fix nested backticks in regular message content
   def fix_nested_backticks_in_content(content)
     require_relative 'markdown_code_block_parser'
-    
+
     parser = MarkdownCodeBlockParser.new(content)
     parser.parse
-    
+
     # Use Opus's parser to escape nested blocks
     # Even though the pairing isn't perfect, it produces balanced HTML
     parser.send(:escape_nested_blocks)
@@ -565,27 +610,27 @@ class ClaudeConversationExporter
   def format_compacted_block(text)
     # Extract only the first/latest conversation summary to avoid repetition
     cleaned_text = extract_latest_conversation_summary(text)
-    
+
     lines = []
     lines << "<details>"
     lines << "<summary>Compacted</summary>"
     lines << ""
     lines << escape_html(escape_backticks(cleaned_text))
     lines << "</details>"
-    
+
     lines.join("\n")
   end
-  
+
   # Extract the first complete conversation summary, removing nested repetitions
   def extract_latest_conversation_summary(text)
     # Very specific approach: extract just the clean Analysis section before any corruption
     if text.include?('This session is being continued from a previous conversation')
-      
+
       # Find the Analysis section
       if text.include?('Analysis:')
         analysis_start = text.index('Analysis:')
         after_analysis = text[analysis_start..-1]
-        
+
         # Look for the first signs of corruption/nesting in the analysis
         corruption_indicators = [
           'This session is being continued from a previous conversation',
@@ -593,7 +638,7 @@ class ClaudeConversationExporter
           # Look for incomplete sentences that suggest corruption
           ' to '  # Often appears as "pointing to This session..."
         ]
-        
+
         # Find the earliest corruption point
         earliest_corruption = nil
         corruption_indicators.each do |indicator|
@@ -602,19 +647,19 @@ class ClaudeConversationExporter
             earliest_corruption = pos
           end
         end
-        
+
         if earliest_corruption
           # Take everything up to the corruption point
           clean_analysis_end = analysis_start + earliest_corruption
           clean_text = text[0...clean_analysis_end].strip
-          
+
           # Make sure we end at a reasonable point
           if clean_text.end_with?(',') || clean_text.end_with?(' ')
             clean_text = clean_text.rstrip.chomp(',') + '.'
           elsif !clean_text.end_with?('.')
             clean_text += '.'
           end
-          
+
           clean_text += "\n\n[Conversation summary continues with additional technical details and implementation steps...]"
           return clean_text
         else
@@ -622,11 +667,11 @@ class ClaudeConversationExporter
           return text[0..2000].strip + "\n\n[Summary continues...]"
         end
       end
-      
+
       # Fallback if no Analysis section
       return text[0..1000].strip + "\n\n[Summary abbreviated]"
     end
-    
+
     # Final fallback
     text.length > 1000 ? text[0..1000] + "\n\n[Content truncated]" : text
   end
@@ -634,19 +679,19 @@ class ClaudeConversationExporter
   def format_tool_use(tool_use, tool_result = nil)
     tool_name = tool_use['name'] || 'Unknown Tool'
     tool_input = tool_use['input'] || {}
-    
+
     markdown = ["## 🤖🔧 Assistant"]
-    
+
     # Main collapsed section for the tool
     markdown << "<details>"
-    
+
     # Special formatting for Write tool
     if tool_name == 'Write' && tool_input['file_path']
       # Extract relative path from the file_path
       relative_path = tool_input['file_path'].gsub(@project_path, '').gsub(/^\//, '')
       markdown << "<summary>Write #{relative_path}</summary>"
       markdown << ""
-      
+
       # Format content in appropriate code block
       if tool_input['content']
         # Determine file extension for syntax highlighting
@@ -671,7 +716,7 @@ class ClaudeConversationExporter
                    else
                      ''
                    end
-        
+
         # Use appropriate number of backticks to wrap content that may contain backticks
         backticks = determine_backticks_needed(tool_input['content'])
         markdown << "#{backticks}#{language}"
@@ -688,10 +733,10 @@ class ClaudeConversationExporter
       description = tool_input['description'] || 'Run bash command'
       markdown << "<summary>Bash: #{description}</summary>"
       markdown << ""
-      
+
       # Make paths relative in the command
       command = tool_input['command'].gsub(@project_path, '.').gsub(@project_path.gsub('/', '\\/'), '.')
-      
+
       backticks = determine_backticks_needed(command)
       markdown << "#{backticks}bash"
       markdown << escape_for_code_block(command)
@@ -702,7 +747,7 @@ class ClaudeConversationExporter
       relative_path = tool_input['file_path'].gsub(@project_path, '').gsub(/^\//, '')
       markdown << "<summary>Edit #{relative_path}</summary>"
       markdown << ""
-      
+
       # Determine file extension for syntax highlighting
       extension = File.extname(tool_input['file_path']).downcase
       language = case extension
@@ -725,11 +770,11 @@ class ClaudeConversationExporter
                  else
                    ''
                  end
-      
+
       if tool_input['old_string'] && tool_input['new_string']
         old_backticks = determine_backticks_needed(tool_input['old_string'])
         new_backticks = determine_backticks_needed(tool_input['new_string'])
-        
+
         markdown << "**Before:**"
         markdown << "#{old_backticks}#{language}"
         markdown << escape_for_code_block(tool_input['old_string'])
@@ -758,9 +803,9 @@ class ClaudeConversationExporter
       markdown << JSON.pretty_generate(tool_input)
       markdown << "```"
     end
-    
+
     markdown << "</details>"
-    
+
     # Separate collapsed section for tool result if available
     if tool_result
       markdown << ""
@@ -768,24 +813,24 @@ class ClaudeConversationExporter
       markdown << "<summary>Tool Result</summary>"
       markdown << ""
       markdown << "```"
-      
+
       result_content = if tool_result['content'].is_a?(String)
                         tool_result['content']
                       else
                         JSON.pretty_generate(tool_result['content'])
                       end
-      
+
       markdown << escape_backticks(result_content)
       markdown << "```"
       markdown << "</details>"
     end
-    
+
     markdown.join("\n")
   end
 
   def format_todo_list(todos)
     lines = []
-    
+
     todos.each do |todo|
       status_emoji = case todo['status']
                     when 'completed'
@@ -797,20 +842,20 @@ class ClaudeConversationExporter
                     else
                       '❓'
                     end
-      
+
       lines << "#{status_emoji} #{todo['content']}  "
     end
-    
+
     lines.join("\n")
   end
 
 
   def system_generated?(content)
     return false unless content.is_a?(String)
-    
+
     # Skip tool use content - it's legitimate
     return false if content.start_with?('## 🤖🔧 Assistant')
-    
+
     skip_patterns = [
       'Caveat: The messages below were generated',
       '<command-name>',
@@ -818,7 +863,7 @@ class ClaudeConversationExporter
       '<local-command-stderr>',
       '<system-reminder>'
     ]
-    
+
     skip_patterns.any? { |pattern| content.include?(pattern) }
   end
 
@@ -830,7 +875,7 @@ class ClaudeConversationExporter
 
   def generate_combined_filename(sessions)
     timestamp = Time.now.strftime('%Y%m%d-%H%M%S')
-    
+
     if sessions.length == 1
       title = generate_title(sessions.first[:messages])
       "#{timestamp}-#{title}-#{sessions.first[:session_id]}.md"
@@ -845,7 +890,7 @@ class ClaudeConversationExporter
   def generate_title(messages)
     first_user_message = messages.find { |m| m[:role] == 'user' }
     return 'untitled' unless first_user_message
-    
+
     content = first_user_message[:content]
     title = content.split("\n").first.to_s
                   .gsub(/^(drop it\.?|real|actually|honestly)[\s,.]*/i, '')
@@ -855,7 +900,7 @@ class ClaudeConversationExporter
                   .join('-')
                   .gsub(/[^a-zA-Z0-9-]/, '')
                   .downcase
-    
+
     title.empty? ? 'untitled' : title[0, 50]
   end
 
@@ -864,36 +909,36 @@ class ClaudeConversationExporter
     title = get_markdown_title
     md << "# #{title}"
     md << ""
-    
+
     if sessions.length == 1
       # Single session - use original format
       return format_markdown(sessions.first)
     end
-    
+
     # Multiple sessions - combined format
     total_messages = sessions.sum { |s| s[:messages].length }
     total_user = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'user' } }
     total_assistant = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'assistant' } }
-    
+
     md << "**Sessions:** #{sessions.length}"
     md << "**Total Messages:** #{total_messages} (#{total_user} user, #{total_assistant} assistant)"
     md << ""
-    
+
     first_timestamp = sessions.map { |s| s[:first_timestamp] }.compact.min
     last_timestamp = sessions.map { |s| s[:last_timestamp] }.compact.max
-    
+
     if first_timestamp
       md << "**Started:** #{Time.parse(first_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
-    
+
     if last_timestamp
       md << "**Last activity:** #{Time.parse(last_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
-    
+
     md << ""
     md << "---"
     md << ""
-    
+
     # Process each session with separators
     sessions.each_with_index do |session, session_index|
       unless session_index == 0
@@ -903,25 +948,25 @@ class ClaudeConversationExporter
         md << "# Session #{session_index + 1}"
         md << ""
         md << "**Session ID:** `#{session[:session_id]}`"
-        
+
         if session[:first_timestamp]
           md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
         end
-        
+
         user_count = session[:messages].count { |m| m[:role] == 'user' }
         assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
-        
+
         md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
         md << ""
       end
-      
+
       # Add messages for this session
       session[:messages].each_with_index do |message, index|
         md.concat(format_message(message, index + 1))
         md << "" unless index == session[:messages].length - 1
       end
     end
-    
+
     # Replace all absolute project paths with relative paths in the final output
     make_paths_relative(md.join("\n"))
   end
@@ -933,29 +978,29 @@ class ClaudeConversationExporter
     md << ""
     md << "**Session:** `#{session[:session_id]}`"
     md << ""
-    
+
     if session[:first_timestamp]
       md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
-    
+
     if session[:last_timestamp]
       md << "**Last activity:** #{Time.parse(session[:last_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
     end
-    
+
     user_count = session[:messages].count { |m| m[:role] == 'user' }
     assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
-    
+
     md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
     md << ""
     md << "---"
     md << ""
-    
+
     # Process messages linearly - they're already processed and paired
     session[:messages].each_with_index do |message, index|
       md.concat(format_message(message, index + 1))
       md << "" unless index == session[:messages].length - 1
     end
-    
+
     # Replace all absolute project paths with relative paths in the final output
     make_paths_relative(md.join("\n"))
   end
@@ -963,11 +1008,11 @@ class ClaudeConversationExporter
 
   def format_message(message, number)
     lines = []
-    
+
     # Check if message content starts with Tool Use heading
-    skip_assistant_heading = message[:role] == 'assistant' && 
+    skip_assistant_heading = message[:role] == 'assistant' &&
                             message[:content].start_with?('## 🤖🔧 Assistant')
-    
+
     unless skip_assistant_heading
       # Format role header with optional timestamp
       role_header = case message[:role]
@@ -980,7 +1025,7 @@ class ClaudeConversationExporter
                    when 'system'
                      "## ⚙️ System"
                    end
-      
+
       # Add timestamp if requested and available
       if @show_timestamps && message[:timestamp]
         begin
@@ -991,14 +1036,14 @@ class ClaudeConversationExporter
           # Skip timestamp if parsing fails
         end
       end
-      
+
       lines << role_header
       lines << ""
     end
-    
+
     lines << message[:content]
     lines << ""
-    
+
     lines
   end
 
@@ -1024,7 +1069,7 @@ class ClaudeConversationExporter
     if @leaf_summaries.any?
       return @leaf_summaries.first[:summary]
     end
-    
+
     # Fallback titles
     "Claude Code Conversation"
   end

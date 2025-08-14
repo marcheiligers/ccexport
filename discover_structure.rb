@@ -1,6 +1,9 @@
 # Quick and dirty script to explore the structure of the jsonl files.
 
 require 'json'
+require 'fileutils'
+
+FileUtils.cp(Dir.glob('/Users/marcheiligers/.claude/projects/-Users-marcheiligers-Projects-ccexport/*.jsonl'), 'spec/fixtures')
 
 patterns = Hash.new { |h, k| h[k] = [] }
 
