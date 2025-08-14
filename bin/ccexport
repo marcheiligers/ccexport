@@ -45,6 +45,10 @@ OptionParser.new do |parser|
     options[:template] = template
   end
   
+  parser.on("--jsonl FILE", "Process a specific JSONL file instead of scanning directories") do |file|
+    options[:jsonl] = file
+  end
+  
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit
@@ -55,6 +59,16 @@ begin
   # Validate options
   if options[:no_open] && !options[:preview]
     puts "Error: --no-open requires --preview"
+    exit 1
+  end
+  
+  if options[:jsonl] && !File.exist?(options[:jsonl])
+    puts "Error: JSONL file not found: #{options[:jsonl]}"
+    exit 1
+  end
+  
+  if options[:jsonl] && !options[:jsonl].end_with?('.jsonl')
+    puts "Error: File must have .jsonl extension: #{options[:jsonl]}"
     exit 1
   end
   

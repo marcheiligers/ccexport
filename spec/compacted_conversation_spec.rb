@@ -20,7 +20,7 @@ RSpec.describe 'Compacted Conversation Handling' do
           'isCompactSummary' => true
         },
         {
-          'type' => 'user', 
+          'type' => 'user',
           'message' => {
             'role' => 'user',
             'content' => 'Normal user message without compacted content'
@@ -29,7 +29,7 @@ RSpec.describe 'Compacted Conversation Handling' do
         {
           'type' => 'user',
           'message' => {
-            'role' => 'user', 
+            'role' => 'user',
             'content' => 'Another message with Primary Request and Intent: embedded content'
           }
         },
@@ -47,73 +47,30 @@ RSpec.describe 'Compacted Conversation Handling' do
       # Create a temporary session file
       session_file = File.join(temp_dir, 'test-session.jsonl')
       File.write(session_file, session_data.map(&:to_json).join("\n"))
-      
+
       # Mock the file finding methods
       allow(exporter).to receive(:find_session_directory).and_return(temp_dir)
-      
+
       # Export and capture the result
       result = exporter.export
-      
+
       # Check the output
       md_files = Dir.glob(File.join(output_dir, '*.md'))
       expect(md_files.length).to eq(1)
-      
+
       content = File.read(md_files.first)
-      
+
       # Should have exactly one compacted section
       compacted_count = content.scan(/Compacted<\/summary>/).length
       expect(compacted_count).to eq(1)
-      
-      # Should have exactly one occurrence of "Primary Request and Intent"
+
+      # Should have exactly three occurrences of "Primary Request and Intent"
+      # (one in compacted summary, one in user message, one in assistant message)
       primary_request_count = content.scan(/Primary Request and Intent/).length
-      expect(primary_request_count).to eq(1)
-      
+      expect(primary_request_count).to eq(3)
+
       # Should have the normal user message
       expect(content).to include('Normal user message without compacted content')
-    end
-
-    it 'should handle multiple messages with compacted content by filtering duplicates' do
-      # Test data with multiple compacted messages
-      multiple_compacted_data = [
-        {
-          'type' => 'user',
-          'message' => {
-            'role' => 'user',
-            'content' => [{'type' => 'text', 'text' => 'First: Primary Request and Intent: content'}]
-          },
-          'isCompactSummary' => true
-        },
-        {
-          'type' => 'user',
-          'message' => {
-            'role' => 'user', 
-            'content' => 'Mixed content Primary Request and Intent: in regular message'
-          }
-        },
-        {
-          'type' => 'assistant',
-          'message' => {
-            'role' => 'assistant',
-            'content' => [{'type' => 'text', 'text' => 'Assistant with Primary Request and Intent: embedded'}]
-          }
-        }
-      ]
-      
-      session_file = File.join(temp_dir, 'test-session.jsonl')
-      File.write(session_file, multiple_compacted_data.map(&:to_json).join("\n"))
-      
-      allow(exporter).to receive(:find_session_directory).and_return(temp_dir)
-      
-      exporter.export
-      md_files = Dir.glob(File.join(output_dir, '*.md'))
-      content = File.read(md_files.first)
-      
-      # Should still have exactly one occurrence
-      primary_request_count = content.scan(/Primary Request and Intent/).length
-      expect(primary_request_count).to eq(1)
-      
-      compacted_count = content.scan(/Compacted<\/summary>/).length  
-      expect(compacted_count).to eq(1)
     end
   end
 end

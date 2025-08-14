@@ -122,10 +122,16 @@ class ClaudeConversationExporter
   end
 
   def export
-    session_dir = find_session_directory
-    session_files = Dir.glob(File.join(session_dir, '*.jsonl')).sort
-
-    raise "No session files found in #{session_dir}" if session_files.empty?
+    if @options[:jsonl]
+      # Process specific JSONL file
+      session_files = [File.expand_path(@options[:jsonl])]
+      session_dir = File.dirname(session_files.first)
+    else
+      # Scan for session files in directory
+      session_dir = find_session_directory
+      session_files = Dir.glob(File.join(session_dir, '*.jsonl')).sort
+      raise "No session files found in #{session_dir}" if session_files.empty?
+    end
 
     # Handle output path - could be a directory or specific file
     if @output_dir.end_with?('.md')
@@ -140,7 +146,11 @@ class ClaudeConversationExporter
       output_path = nil  # Will be generated later
     end
 
-    puts "Found #{session_files.length} session file(s) in #{session_dir}"
+    if @options[:jsonl]
+      puts "Processing specific JSONL file: #{File.basename(session_files.first)}"
+    else
+      puts "Found #{session_files.length} session file(s) in #{session_dir}"
+    end
 
     sessions = []
     total_messages = 0
@@ -397,6 +407,7 @@ class ClaudeConversationExporter
       role: 'user',
       content: format_compacted_block(text),
       timestamp: data['timestamp'],
+      message_id: data.dig('message', 'id'),
       index: 0
     }
   end
@@ -416,6 +427,7 @@ class ClaudeConversationExporter
       role: 'assistant',
       content: content,
       timestamp: tool_use_data['timestamp'],
+      message_id: tool_use_data.dig('message', 'id'),
       index: 0
     }
   end
@@ -431,6 +443,7 @@ class ClaudeConversationExporter
       role: 'assistant_thinking',
       content: formatted_content,
       timestamp: data['timestamp'] || Time.now.iso8601,
+      message_id: data.dig('message', 'id'),
       index: 0
     }
   end
@@ -471,6 +484,7 @@ class ClaudeConversationExporter
       role: role,
       content: processed_content,
       timestamp: data['timestamp'],
+      message_id: data.dig('message', 'id'),
       index: 0
     }
   end
@@ -564,7 +578,7 @@ class ClaudeConversationExporter
 
   # Helper method to escape backticks in code blocks
   def escape_backticks(content)
-    content.to_s.gsub('`', '\\`')
+    content.to_s.gsub('`', '\\\`')
   end
 
   # Helper method to escape HTML tags
@@ -819,7 +833,6 @@ class ClaudeConversationExporter
                       else
                         JSON.pretty_generate(tool_result['content'])
                       end
-
       markdown << escape_backticks(result_content)
       markdown << "```"
       markdown << "</details>"
@@ -1038,6 +1051,12 @@ class ClaudeConversationExporter
       end
 
       lines << role_header
+
+      # Add message ID as HTML comment if available
+      if message[:message_id]
+        lines << "<!-- #{message[:message_id]} -->"
+      end
+
       lines << ""
     end
 

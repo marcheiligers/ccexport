@@ -202,6 +202,7 @@
 <h2>👤 User</h2>
 <p>builde a claude code conversation exporter based in @index.js but in Ruby. i do not need JSON export, only Markdown (Github flavored). i do not need an interactive mode nor command line switches at this time. i always want the entire conversation, prompts, responses, tool calls. i will run the tool in the working directory of the project i want to export. i do want to change the Markdown format so that it looks more like Claude Desktop and is easy to consume by readers. ensure you write tests, using RSpec. the index.js file comes from this project: <a href="https://github.com/developerisnow/claude-code-exporter">https://github.com/developerisnow/claude-code-exporter</a> and you should credit it in the README.md</p>
 <h2>🤖 Assistant</h2>
+<!-- msg_01Xus46C4xJs3Qqrm6b7xgni -->
 <p>Looking at the JavaScript exporter, I'll build a Ruby version that extracts full conversations and formats them for GitHub-flavored Markdown in a more readable Claude Desktop style.</p>
 <h2>🤖🔧 Assistant</h2>
 <details>
@@ -1007,37 +1008,7 @@ Installing rspec-mocks 3.13.5
 Fetching rspec 3.13.1
 Installing rspec 3.13.1
 Bundle complete! 1 Gemfile dependency, 7 gems now installed.
-Use Fetching gem metadata from https://rubygems.org/...
-Resolving dependencies...
-Fetching diff-lcs 1.6.2
-Fetching rspec-support 3.13.4
-Installing rspec-support 3.13.4
-Installing diff-lcs 1.6.2
-Fetching rspec-core 3.13.5
-Fetching rspec-expectations 3.13.5
-Fetching rspec-mocks 3.13.5
-Installing rspec-core 3.13.5
-Installing rspec-expectations 3.13.5
-Installing rspec-mocks 3.13.5
-Fetching rspec 3.13.1
-Installing rspec 3.13.1
-Bundle complete! 1 Gemfile dependency, 7 gems now installed.
-Use bundle info [gemname]Fetching gem metadata from https://rubygems.org/...
-Resolving dependencies...
-Fetching diff-lcs 1.6.2
-Fetching rspec-support 3.13.4
-Installing rspec-support 3.13.4
-Installing diff-lcs 1.6.2
-Fetching rspec-core 3.13.5
-Fetching rspec-expectations 3.13.5
-Fetching rspec-mocks 3.13.5
-Installing rspec-core 3.13.5
-Installing rspec-expectations 3.13.5
-Installing rspec-mocks 3.13.5
-Fetching rspec 3.13.1
-Installing rspec 3.13.1
-Bundle complete! 1 Gemfile dependency, 7 gems now installed.
-Use `bundle info [gemname] to see where a bundled gem is installed.
+Use \`bundle info [gemname]\` to see where a bundled gem is installed.
 </code></pre>
 </details>
 <h2>🤖🔧 Assistant</h2>
@@ -1122,7 +1093,7 @@ rspec ./spec/claude_conversation_exporter_spec.rb:176 # ClaudeConversationExport
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
     46→        }
     47→      ].map(&amp;:to_json).join(&quot;\n&quot;)
     48→    end
@@ -1155,7 +1126,7 @@ rspec ./spec/claude_conversation_exporter_spec.rb:176 # ClaudeConversationExport
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    167→        'timestamp' =&gt; '2024-01-01T10:00:00Z'
    168→      }.to_json
    169→    end
@@ -1231,6 +1202,7 @@ Finished in 0.018 seconds (files took 0.04634 seconds to load)
 </code></pre>
 </details>
 <h2>🤖 Assistant</h2>
+<!-- msg_013uAiT5TdM4nBJWbd4SZmKi -->
 <p>Mr Moo, I've successfully built a Ruby Claude Code conversation exporter based on the JavaScript <code>index.js</code> file. Here's what I created:</p>
 <p><strong>Main Components:</strong></p>
 <ul>
@@ -1256,6 +1228,7 @@ bundle exec rspec              # Run tests
 <h2>👤 User</h2>
 <p>let's start cleaning up the markdown format. we'll do this one at a time. when the assistent response is of type &quot;text&quot;, extract the text and just put that in the markdown</p>
 <h2>🤖 Assistant</h2>
+<!-- msg_01RsVRhqUAndDZFukSRHR7zv -->
 <p>I'll help you clean up the Markdown format by extracting text content from assistant responses when they're of type &quot;text&quot;. Let me first examine how the current code handles message content extraction.</p>
 <h2>🤖🔧 Assistant</h2>
 <details>
@@ -1393,7 +1366,7 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running cat -nThe file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    112→      last_timestamp: messages.last&amp;.dig(:timestamp)
    113→    }
    114→  end
@@ -1489,7 +1462,7 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running cat -nThe file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    144→      tool_results: tool_results
    145→    }
    146→  end
@@ -1622,7 +1595,7 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    148→      expect(title).to eq('untitled')
    149→    end
    150→  end
@@ -1748,6 +1721,7 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 </code></pre>
 </details>
 <h2>🤖 Assistant</h2>
+<!-- msg_01Kz4fR7pNE8rHjbDGmbsULU -->
 <p>Perfect! I've updated the Ruby exporter to clean up the Markdown format by extracting text content from assistant responses when they're of type &quot;text&quot;. Here's what I changed:</p>
 <p><strong>Key Changes:</strong></p>
 <ol>
@@ -1766,6 +1740,7 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 <h2>👤 User</h2>
 <p>we've lost the output of the other assistent message types. for now just put those back as is and we'll continue cleaning up</p>
 <h2>🤖 Assistant</h2>
+<!-- msg_01BAHbu6CQYwU2AAEdvuw7D2 -->
 <p>You're absolutely right - I filtered out the non-text content completely when I should have preserved it. Let me fix that by keeping the other message types as-is while only cleaning up the text extraction.</p>
 <h2>🤖🔧 Assistant</h2>
 <details>
@@ -1824,7 +1799,7 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running cat -nThe file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    144→      tool_results: tool_results
    145→    }
    146→  end
@@ -1916,7 +1891,7 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    161→
    162→  describe '#extract_text_content' do
    163→    let(:exporter) { described_class.new(project_path, output_dir) }
@@ -1997,7 +1972,7 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    192→
    193→  describe '#extract_message with text extraction' do
    194→    let(:exporter) { described_class.new(project_path, output_dir) }
@@ -2071,6 +2046,7 @@ Finished in 0.02283 seconds (files took 0.06151 seconds to load)
 </code></pre>
 </details>
 <h2>🤖 Assistant</h2>
+<!-- msg_016i7S6qBXUE9HuLSLTxDe6K -->
 <p>Perfect! I've fixed the issue so we don't lose the other assistant message types. Here's what I changed:</p>
 <p><strong>Key Changes:</strong></p>
 <ol>
@@ -2093,6 +2069,7 @@ Finished in 0.02283 seconds (files took 0.06151 seconds to load)
 <h2>👤 User</h2>
 <p>i have made @docs/github_markdown_cheatsheet.html available to you. for tool_use we want to 1) customize the markdown depending on the name of the tool, 2) combine the tool_use with the following tool_result into a single section called Tool Use, 3) use &quot;8. Collapsed Sections&quot; from the markdown cheetsheet with the name of the tool in the summary and the input parameters in a codeblock 4) use a second collapsed section for the tool result with the content in a code block. we'll customize further from here.</p>
 <h2>🤖 Assistant</h2>
+<!-- msg_01Wr3vjoTGrVJ7qgzZeRYgAh -->
 <p>I need to read the GitHub Markdown cheatsheet first to understand the collapsed sections format, then implement the tool use formatting you described.</p>
 <h2>🤖🔧 Assistant</h2>
 <details>
@@ -2165,6 +2142,7 @@ You can add an image or a code block, too.
 </code></pre>
 </details>
 <h2>🤖 Assistant</h2>
+<!-- msg_01J3v51eThHTEZj26CezD39N -->
 <p>Perfect! Now I understand the collapsed sections format. Let me implement the tool use formatting with collapsed sections as you described.</p>
 <h2>🤖🔧 Assistant</h2>
 <details>
@@ -2246,7 +2224,7 @@ You can add an image or a code block, too.
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running cat -nThe file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    144→      tool_results: tool_results
    145→    }
    146→  end
@@ -2367,7 +2345,7 @@ You can add an image or a code block, too.
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running cat -nThe file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    175→    
    176→    parts.join(&quot;\n\n&quot;)
    177→  end
@@ -2382,105 +2360,9 @@ You can add an image or a code block, too.
    186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
    187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
    188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;`The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;``json&quot;
+   189→    markdown &lt;&lt; &quot;\`\`\`json&quot;
    190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;`The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;``&quot;
+   191→    markdown &lt;&lt; &quot;\`\`\`&quot;
    192→    
    193→    # Tool result section if available
    194→    if tool_result
@@ -2488,82 +2370,7 @@ You can add an image or a code block, too.
    196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
    197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
    198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;```&quot;
-   192→    
-   193→    # Tool result section if available
-   194→    if tool_result
-   195→      markdown &lt;&lt; &quot;&quot;
-   196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
-   198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;```&quot;
-   192→    
-   193→    # Tool result section if available
-   194→    if tool_result
-   195→      markdown &lt;&lt; &quot;&quot;
-   196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
-   198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;`The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;```&quot;
-   192→    
-   193→    # Tool result section if available
-   194→    if tool_result
-   195→      markdown &lt;&lt; &quot;&quot;
-   196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
-   198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;``&quot;
+   199→      markdown &lt;&lt; &quot;\`\`\`&quot;
    200→      
    201→      result_content = if tool_result['content'].is_a?(String)
    202→                        tool_result['content']
@@ -2572,109 +2379,7 @@ You can add an image or a code block, too.
    205→                      end
    206→      
    207→      markdown &lt;&lt; result_content
-   208→      markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;```&quot;
-   192→    
-   193→    # Tool result section if available
-   194→    if tool_result
-   195→      markdown &lt;&lt; &quot;&quot;
-   196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
-   198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;```&quot;
-   200→      
-   201→      result_content = if tool_result['content'].is_a?(String)
-   202→                        tool_result['content']
-   203→                      else
-   204→                        JSON.pretty_generate(tool_result['content'])
-   205→                      end
-   206→      
-   207→      markdown &lt;&lt; result_content
-   208→      markdown &lt;&lt; &quot;The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;```&quot;
-   192→    
-   193→    # Tool result section if available
-   194→    if tool_result
-   195→      markdown &lt;&lt; &quot;&quot;
-   196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
-   198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;```&quot;
-   200→      
-   201→      result_content = if tool_result['content'].is_a?(String)
-   202→                        tool_result['content']
-   203→                      else
-   204→                        JSON.pretty_generate(tool_result['content'])
-   205→                      end
-   206→      
-   207→      markdown &lt;&lt; result_content
-   208→      markdown &lt;&lt; &quot;`The file lib/claude_conversation_exporter.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   175→    
-   176→    parts.join(&quot;\n\n&quot;)
-   177→  end
-   178→
-   179→  def format_tool_use(tool_use, tool_result = nil)
-   180→    tool_name = tool_use['name'] || 'Unknown Tool'
-   181→    tool_input = tool_use['input'] || {}
-   182→    
-   183→    markdown = [&quot;## Tool Use&quot;]
-   184→    
-   185→    # Main collapsed section for the tool
-   186→    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   187→    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
-   188→    markdown &lt;&lt; &quot;&quot;
-   189→    markdown &lt;&lt; &quot;```json&quot;
-   190→    markdown &lt;&lt; JSON.pretty_generate(tool_input)
-   191→    markdown &lt;&lt; &quot;```&quot;
-   192→    
-   193→    # Tool result section if available
-   194→    if tool_result
-   195→      markdown &lt;&lt; &quot;&quot;
-   196→      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
-   197→      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
-   198→      markdown &lt;&lt; &quot;&quot;
-   199→      markdown &lt;&lt; &quot;```&quot;
-   200→      
-   201→      result_content = if tool_result['content'].is_a?(String)
-   202→                        tool_result['content']
-   203→                      else
-   204→                        JSON.pretty_generate(tool_result['content'])
-   205→                      end
-   206→      
-   207→      markdown &lt;&lt; result_content
-   208→      markdown &lt;&lt; &quot;``&quot;
+   208→      markdown &lt;&lt; &quot;\`\`\`&quot;
    209→      markdown &lt;&lt; &quot;&lt;/details&gt;&quot;
    210→    end
    211→    
@@ -2831,7 +2536,7 @@ You can add an image or a code block, too.
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    158→      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
    159→    end
    160→  end
@@ -2896,202 +2601,7 @@ You can add an image or a code block, too.
    219→      expect(result).to include('## Tool Use')
    220→      expect(result).to include('&lt;details&gt;')
    221→      expect(result).to include('&lt;summary&gt;Read&lt;/summary&gt;')
-   222→      expect(result).to include('The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   158→      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
-   159→    end
-   160→  end
-   161→
-   162→  describe '#extract_text_content' do
-   163→    let(:exporter) { described_class.new(project_path, output_dir) }
-   164→
-   165→    it 'extracts text from content array and formats tool use' do
-   166→      content_array = [
-   167→        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
-   168→        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } },
-   169→        { 'type' =&gt; 'tool_result', 'content' =&gt; 'Tool executed successfully' },
-   170→        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
-   171→      ]
-   172→      
-   173→      result = exporter.send(:extract_text_content, content_array)
-   174→      expect(result).to include('Hello there!')
-   175→      expect(result).to include('How can I help?')
-   176→      expect(result).to include('## Tool Use')
-   177→      expect(result).to include('&lt;details&gt;')
-   178→      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
-   179→      expect(result).to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
-   180→      expect(result).to include('Tool executed successfully')
-   181→    end
-   182→
-   183→    it 'handles tool_use without tool_result' do
-   184→      content_array = [
-   185→        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } }
-   186→      ]
-   187→      
-   188→      result = exporter.send(:extract_text_content, content_array)
-   189→      expect(result).to include('## Tool Use')
-   190→      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
-   191→      expect(result).not_to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
-   192→    end
-   193→
-   194→    it 'preserves non-text, non-tool content as JSON' do
-   195→      content_array = [
-   196→        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
-   197→      ]
-   198→      
-   199→      result = exporter.send(:extract_text_content, content_array)
-   200→      expect(result).to include('image')
-   201→      expect(result).to include('base64...')
-   202→    end
-   203→  end
-   204→
-   205→  describe '#format_tool_use' do
-   206→    let(:exporter) { described_class.new(project_path, output_dir) }
-   207→
-   208→    it 'formats tool use with collapsed sections' do
-   209→      tool_use = {
-   210→        'name' =&gt; 'Read',
-   211→        'input' =&gt; { 'file_path' =&gt; '/path/to/file.txt' }
-   212→      }
-   213→      tool_result = {
-   214→        'content' =&gt; 'File contents here'
-   215→      }
-   216→      
-   217→      result = exporter.send(:format_tool_use, tool_use, tool_result)
-   218→      
-   219→      expect(result).to include('## Tool Use')
-   220→      expect(result).to include('&lt;details&gt;')
-   221→      expect(result).to include('&lt;summary&gt;Read&lt;/summary&gt;')
-   222→      expect(result).to include('The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   158→      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
-   159→    end
-   160→  end
-   161→
-   162→  describe '#extract_text_content' do
-   163→    let(:exporter) { described_class.new(project_path, output_dir) }
-   164→
-   165→    it 'extracts text from content array and formats tool use' do
-   166→      content_array = [
-   167→        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
-   168→        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } },
-   169→        { 'type' =&gt; 'tool_result', 'content' =&gt; 'Tool executed successfully' },
-   170→        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
-   171→      ]
-   172→      
-   173→      result = exporter.send(:extract_text_content, content_array)
-   174→      expect(result).to include('Hello there!')
-   175→      expect(result).to include('How can I help?')
-   176→      expect(result).to include('## Tool Use')
-   177→      expect(result).to include('&lt;details&gt;')
-   178→      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
-   179→      expect(result).to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
-   180→      expect(result).to include('Tool executed successfully')
-   181→    end
-   182→
-   183→    it 'handles tool_use without tool_result' do
-   184→      content_array = [
-   185→        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } }
-   186→      ]
-   187→      
-   188→      result = exporter.send(:extract_text_content, content_array)
-   189→      expect(result).to include('## Tool Use')
-   190→      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
-   191→      expect(result).not_to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
-   192→    end
-   193→
-   194→    it 'preserves non-text, non-tool content as JSON' do
-   195→      content_array = [
-   196→        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
-   197→      ]
-   198→      
-   199→      result = exporter.send(:extract_text_content, content_array)
-   200→      expect(result).to include('image')
-   201→      expect(result).to include('base64...')
-   202→    end
-   203→  end
-   204→
-   205→  describe '#format_tool_use' do
-   206→    let(:exporter) { described_class.new(project_path, output_dir) }
-   207→
-   208→    it 'formats tool use with collapsed sections' do
-   209→      tool_use = {
-   210→        'name' =&gt; 'Read',
-   211→        'input' =&gt; { 'file_path' =&gt; '/path/to/file.txt' }
-   212→      }
-   213→      tool_result = {
-   214→        'content' =&gt; 'File contents here'
-   215→      }
-   216→      
-   217→      result = exporter.send(:format_tool_use, tool_use, tool_result)
-   218→      
-   219→      expect(result).to include('## Tool Use')
-   220→      expect(result).to include('&lt;details&gt;')
-   221→      expect(result).to include('&lt;summary&gt;Read&lt;/summary&gt;')
-   222→      expect(result).to include('`The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
-   158→      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
-   159→    end
-   160→  end
-   161→
-   162→  describe '#extract_text_content' do
-   163→    let(:exporter) { described_class.new(project_path, output_dir) }
-   164→
-   165→    it 'extracts text from content array and formats tool use' do
-   166→      content_array = [
-   167→        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
-   168→        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } },
-   169→        { 'type' =&gt; 'tool_result', 'content' =&gt; 'Tool executed successfully' },
-   170→        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
-   171→      ]
-   172→      
-   173→      result = exporter.send(:extract_text_content, content_array)
-   174→      expect(result).to include('Hello there!')
-   175→      expect(result).to include('How can I help?')
-   176→      expect(result).to include('## Tool Use')
-   177→      expect(result).to include('&lt;details&gt;')
-   178→      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
-   179→      expect(result).to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
-   180→      expect(result).to include('Tool executed successfully')
-   181→    end
-   182→
-   183→    it 'handles tool_use without tool_result' do
-   184→      content_array = [
-   185→        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } }
-   186→      ]
-   187→      
-   188→      result = exporter.send(:extract_text_content, content_array)
-   189→      expect(result).to include('## Tool Use')
-   190→      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
-   191→      expect(result).not_to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
-   192→    end
-   193→
-   194→    it 'preserves non-text, non-tool content as JSON' do
-   195→      content_array = [
-   196→        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
-   197→      ]
-   198→      
-   199→      result = exporter.send(:extract_text_content, content_array)
-   200→      expect(result).to include('image')
-   201→      expect(result).to include('base64...')
-   202→    end
-   203→  end
-   204→
-   205→  describe '#format_tool_use' do
-   206→    let(:exporter) { described_class.new(project_path, output_dir) }
-   207→
-   208→    it 'formats tool use with collapsed sections' do
-   209→      tool_use = {
-   210→        'name' =&gt; 'Read',
-   211→        'input' =&gt; { 'file_path' =&gt; '/path/to/file.txt' }
-   212→      }
-   213→      tool_result = {
-   214→        'content' =&gt; 'File contents here'
-   215→      }
-   216→      
-   217→      result = exporter.send(:format_tool_use, tool_use, tool_result)
-   218→      
-   219→      expect(result).to include('## Tool Use')
-   220→      expect(result).to include('&lt;details&gt;')
-   221→      expect(result).to include('&lt;summary&gt;Read&lt;/summary&gt;')
-   222→      expect(result).to include('``json')
+   222→      expect(result).to include('\`\`\`json')
    223→      expect(result).to include('file_path')
    224→      expect(result).to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
    225→      expect(result).to include('File contents here')
@@ -3151,163 +2661,7 @@ Failures:
   1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
      Failure/Error: expect(result[:content]).to include('tool_use')
 
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n`..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n``json\n{}\n..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n`..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n``\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
+       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n\`\`\`json\n{}\n\`\`\`\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
        Diff:
        @@ -1 +1,10 @@
        -tool_use
@@ -3317,231 +2671,9 @@ Failures:
        +&lt;details&gt;
        +&lt;summary&gt;some_tool&lt;/summary&gt;
        +
-       +..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n```\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
-       Diff:
-       @@ -1 +1,10 @@
-       -tool_use
-       +Here is my response.
-       +
-       +## Tool Use
-       +&lt;details&gt;
-       +&lt;summary&gt;some_tool&lt;/summary&gt;
-       +
-       +..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n```\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
-       Diff:
-       @@ -1 +1,10 @@
-       -tool_use
-       +Here is my response.
-       +
-       +## Tool Use
-       +&lt;details&gt;
-       +&lt;summary&gt;some_tool&lt;/summary&gt;
-       +
-       +`..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n```\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
-       Diff:
-       @@ -1 +1,10 @@
-       -tool_use
-       +Here is my response.
-       +
-       +## Tool Use
-       +&lt;details&gt;
-       +&lt;summary&gt;some_tool&lt;/summary&gt;
-       +
-       +``json
+       +\`\`\`json
        +{}
-       +..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n```\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
-       Diff:
-       @@ -1 +1,10 @@
-       -tool_use
-       +Here is my response.
-       +
-       +## Tool Use
-       +&lt;details&gt;
-       +&lt;summary&gt;some_tool&lt;/summary&gt;
-       +
-       +```json
-       +{}
-       +..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n```\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
-       Diff:
-       @@ -1 +1,10 @@
-       -tool_use
-       +Here is my response.
-       +
-       +## Tool Use
-       +&lt;details&gt;
-       +&lt;summary&gt;some_tool&lt;/summary&gt;
-       +
-       +```json
-       +{}
-       +`..Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-9pu4od/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-auxava/output/
-.Found 1 session file(s)
-
-Exported 0 conversations (0 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-wjcct/output/
-.Found 1 session file(s)
-✓ test-session: 2 messages
-
-Exported 1 conversations (2 total messages) to /var/folders/r7/p8lc2l_n46bdvx42lp68qc100000gn/T/d20250808-25997-odict1/output/
-............F.Found 1 session file(s)
-✓ test-session: 1 messages
-
-Exported 1 conversations (1 total messages) to claude-conversations/
-.
-
-Failures:
-
-  1) ClaudeConversationExporter#extract_message with text extraction extracts text content from assistant array messages and preserves other content
-     Failure/Error: expect(result[:content]).to include('tool_use')
-
-       expected &quot;Here is my response.\n\n## Tool Use\n&lt;details&gt;\n&lt;summary&gt;some_tool&lt;/summary&gt;\n\n```json\n{}\n```\n&lt;/details&gt;&quot; to include &quot;tool_use&quot;
-       Diff:
-       @@ -1 +1,10 @@
-       -tool_use
-       +Here is my response.
-       +
-       +## Tool Use
-       +&lt;details&gt;
-       +&lt;summary&gt;some_tool&lt;/summary&gt;
-       +
-       +```json
-       +{}
-       +``
+       +\`\`\`
        +&lt;/details&gt;
      # ./spec/claude_conversation_exporter_spec.rb:260:in 'block (3 levels) in &lt;top (required)&gt;'
 
@@ -3554,6 +2686,7 @@ rspec ./spec/claude_conversation_exporter_spec.rb:246 # ClaudeConversationExport
 </code></pre>
 </details>
 <h2>🤖 Assistant</h2>
+<!-- msg_012feai7Gdf6SD6E1qfRGGyS -->
 <p>I need to fix the failing test. The test is looking for &quot;tool_use&quot; but the tool is now formatted with collapsed sections, not raw JSON.</p>
 <h2>🤖🔧 Assistant</h2>
 <details>
@@ -3601,7 +2734,7 @@ rspec ./spec/claude_conversation_exporter_spec.rb:246 # ClaudeConversationExport
 </details>
 <details>
 <summary>Tool Result</summary>
-<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running cat -nThe file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running `cat -n on a snippet of the edited file:
+<pre><code>The file spec/claude_conversation_exporter_spec.rb has been updated. Here's the result of running \`cat -n\` on a snippet of the edited file:
    242→
    243→  describe '#extract_message with text extraction' do
    244→    let(:exporter) { described_class.new(project_path, output_dir) }
@@ -3677,6 +2810,7 @@ Finished in 0.02421 seconds (files took 0.05041 seconds to load)
 </code></pre>
 </details>
 <h2>🤖 Assistant</h2>
+<!-- msg_01M7wJe9FRnHkn7u6MYZztHU -->
 <p>Perfect! I've successfully implemented the tool use formatting with collapsed sections as requested. Here's what I implemented:</p>
 <p><strong>Key Features:</strong></p>
 <ol>
