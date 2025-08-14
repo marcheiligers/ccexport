@@ -622,72 +622,14 @@ class ClaudeConversationExporter
 
   # Format any compacted conversation content as collapsible section
   def format_compacted_block(text)
-    # Extract only the first/latest conversation summary to avoid repetition
-    cleaned_text = extract_latest_conversation_summary(text)
-
     lines = []
     lines << "<details>"
     lines << "<summary>Compacted</summary>"
     lines << ""
-    lines << escape_html(escape_backticks(cleaned_text))
+    lines << escape_html(escape_backticks(text))
     lines << "</details>"
 
     lines.join("\n")
-  end
-
-  # Extract the first complete conversation summary, removing nested repetitions
-  def extract_latest_conversation_summary(text)
-    # Very specific approach: extract just the clean Analysis section before any corruption
-    if text.include?('This session is being continued from a previous conversation')
-
-      # Find the Analysis section
-      if text.include?('Analysis:')
-        analysis_start = text.index('Analysis:')
-        after_analysis = text[analysis_start..-1]
-
-        # Look for the first signs of corruption/nesting in the analysis
-        corruption_indicators = [
-          'This session is being continued from a previous conversation',
-          'toolu_',
-          # Look for incomplete sentences that suggest corruption
-          ' to '  # Often appears as "pointing to This session..."
-        ]
-
-        # Find the earliest corruption point
-        earliest_corruption = nil
-        corruption_indicators.each do |indicator|
-          pos = after_analysis.index(indicator)
-          if pos && (earliest_corruption.nil? || pos < earliest_corruption)
-            earliest_corruption = pos
-          end
-        end
-
-        if earliest_corruption
-          # Take everything up to the corruption point
-          clean_analysis_end = analysis_start + earliest_corruption
-          clean_text = text[0...clean_analysis_end].strip
-
-          # Make sure we end at a reasonable point
-          if clean_text.end_with?(',') || clean_text.end_with?(' ')
-            clean_text = clean_text.rstrip.chomp(',') + '.'
-          elsif !clean_text.end_with?('.')
-            clean_text += '.'
-          end
-
-          clean_text += "\n\n[Conversation summary continues with additional technical details and implementation steps...]"
-          return clean_text
-        else
-          # No corruption found, but limit length anyway
-          return text[0..2000].strip + "\n\n[Summary continues...]"
-        end
-      end
-
-      # Fallback if no Analysis section
-      return text[0..1000].strip + "\n\n[Summary abbreviated]"
-    end
-
-    # Final fallback
-    text.length > 1000 ? text[0..1000] + "\n\n[Content truncated]" : text
   end
 
   def format_tool_use(tool_use, tool_result = nil)
