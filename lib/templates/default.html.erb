@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
+    <%= include_prism %>
     <style>
         :root {
             --dark-brown: #592d1c;
@@ -48,28 +49,65 @@
             border-bottom: 1px solid var(--medium-brown);
         }
 
-        /* Code blocks */
-        pre {
-            background: var(--dark-blue);
-            color: var(--light-blue);
-            padding: 16px;
+        /* Code blocks - integrate with Prism.js */
+        pre[class*="language-"] {
+            background: var(--dark-blue) !important;
             border-radius: 12px;
             overflow-x: auto;
             margin: 16px 0;
         }
 
-        code {
+        code[class*="language-"] {
+            color: var(--light-blue) !important;
+            text-shadow: none !important;
+        }
+
+        /* Inline code (no language class) */
+        :not(pre) > code:not([class*="language-"]) {
             background: var(--light-brown);
+            color: var(--dark-brown);
             padding: 2px 6px;
             border-radius: 6px;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
-        pre code {
-            background: transparent;
-            padding: 0;
-            border-radius: 0;
-        }
+        /* Override Prism.js colors for better contrast on dark background */
+        .token.comment,
+        .token.prolog,
+        .token.doctype,
+        .token.cdata { color: #a0a0a0 !important; }
+        
+        .token.punctuation { color: #f8f8f2 !important; }
+        
+        .token.property,
+        .token.tag,
+        .token.boolean,
+        .token.number,
+        .token.constant,
+        .token.symbol,
+        .token.deleted { color: #f92672 !important; }
+        
+        .token.selector,
+        .token.attr-name,
+        .token.string,
+        .token.char,
+        .token.builtin,
+        .token.inserted { color: #a6e22e !important; }
+        
+        .token.operator,
+        .token.entity,
+        .token.url { color: #f8f8f2 !important; }
+        
+        .token.atrule,
+        .token.attr-value,
+        .token.keyword { color: #66d9ef !important; }
+        
+        .token.function,
+        .token.class-name { color: #e6db74 !important; }
+        
+        .token.regex,
+        .token.important,
+        .token.variable { color: #fd971f !important; }
 
         /* Blockquotes (thinking content) */
         blockquote {

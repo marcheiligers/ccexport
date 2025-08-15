@@ -12,7 +12,7 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 - Automatically discovers Claude Code session files
 - Claude Desktop-inspired formatting with user/assistant message indicators
 - Comprehensive RSpec test suite with 96 tests
-- HTML Preview Generation: Convert Markdown to HTML with GitHub styling
+- HTML Preview Generation: Convert Markdown to HTML with GitHub styling and embedded syntax highlighting
 
 ### Enhanced Tool Formatting
 - **Write Tool**: Shows relative file paths in summary with syntax-highlighted code blocks
@@ -23,7 +23,7 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 ### Advanced Features
 - **Universal Path Relativization**: All absolute project paths converted to relative paths
 - **Smart Tool Pairing**: Automatically pairs tool_use with corresponding tool_result messages
-- **Syntax Highlighting**: Supports Ruby, JavaScript, Python, TypeScript, JSON, Markdown, YAML, Bash
+- **Embedded Syntax Highlighting**: Self-contained HTML exports with Prism.js supporting Ruby, JavaScript, Python, TypeScript, JSON, Markdown, YAML, Bash and more
 - **Robust Message Processing**: Handles edge cases like tool-only messages and system filtering
 - **Date Filtering**: Filter conversations by date range or today only (timezone-aware)
 - **Multiple Session Combining**: Automatically combines multiple sessions into single chronologically ordered output
@@ -153,7 +153,7 @@ The exporter creates Markdown files with:
 For complete examples of the exported format, see the sample files in this repository:
 
 - **[VIBE.md](VIBE.md)** - Full conversation export showing all features including tool use, thinking messages, message IDs, and formatting
-- **[VIBE.html](VIBE.html)** - HTML preview version with default template styling and syntax highlighting
+- **[VIBE.html](VIBE.html)** - HTML preview version with default template styling and embedded Prism.js syntax highlighting
 
 These files demonstrate real conversation exports with:
 - Multiple message types (user, assistant, thinking)
@@ -289,7 +289,7 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - **Syntax highlighting**: Automatic language detection and code block formatting
 - **Path relativization**: Clean, portable output with relative paths
 - **Advanced tool pairing**: Smart matching of tool_use with tool_result messages
-- **Integrated HTML Preview**: Generate and open HTML previews with GitHub styling
+- **Integrated HTML Preview**: Generate and open HTML previews with GitHub styling and embedded Prism.js syntax highlighting
 - **Skip Logging & Message Tracking**: JSONL logs of filtered messages and HTML comment message IDs
 - **Individual File Processing**: Direct JSONL file processing with `--jsonl` option
 - **Secret Detection & Redaction**: Automatic security scanning and redaction using GitLab's secret detection ruleset

@@ -84,6 +84,29 @@ class ClaudeConversationExporter
       html_filename
     end
 
+    def include_prism
+      # Prism.js CSS and JavaScript for syntax highlighting
+      # MIT License - https://github.com/PrismJS/prism
+      css = File.read(File.join(__dir__, 'assets/prism.css'))
+      js = File.read(File.join(__dir__, 'assets/prism.js'))
+
+      # Add initialization code to automatically highlight code blocks
+      init_js = <<~JS
+        
+        /* Initialize Prism.js */
+        if (typeof window !== 'undefined' && window.document) {
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof Prism !== 'undefined' && Prism.highlightAll) {
+                    Prism.highlightAll();
+                }
+            });
+        }
+      JS
+
+      # Return both CSS and JS as a complete block
+      "<style>#{css}</style>\n<script>#{js}#{init_js}</script>"
+    end
+
     def extract_title_from_summaries_or_markdown(markdown_file, leaf_summaries = [])
       # Try to get title from leaf summaries first
       if leaf_summaries.any?
@@ -186,7 +209,7 @@ class ClaudeConversationExporter
 
     # Write skip log if there were any skipped messages
     write_skip_log(output_path)
-    
+
     # Write secrets detection log if any secrets were detected
     write_secrets_log(output_path)
 
@@ -243,14 +266,14 @@ class ClaudeConversationExporter
   def setup_secret_detection
     # Create a silent logger for secret detection to avoid cluttering output
     null_logger = Logger.new('/dev/null')
-    
+
     # Load the default GitLab secret detection ruleset
     ruleset = Gitlab::SecretDetection::Core::Ruleset.new(logger: null_logger)
     rules = ruleset.rules
-    
+
     # Create the scanner instance
     @secret_scanner = Gitlab::SecretDetection::Core::Scanner.new(rules: rules, logger: null_logger)
-    
+
     # Create a simple payload struct for scanning
     @payload_struct = Struct.new(:id, :data)
   rescue StandardError => e
@@ -627,20 +650,20 @@ class ClaudeConversationExporter
   # Scan content for secrets and redact them using GitLab's masker
   def scan_and_redact_secrets(content, context_id = 'unknown')
     return content if @secret_scanner.nil? || content.nil? || content.empty?
-    
+
     original_content = content.to_s
-    
+
     # Scan for secrets
     payload = @payload_struct.new(context_id, original_content)
     response = @secret_scanner.secrets_scan([payload])
-    
+
     # If no secrets found, return original content
     return content if response.status == Gitlab::SecretDetection::Core::Status::NOT_FOUND
-    
+
     # Record detected secrets for logging
     response.results.each do |finding|
       next unless finding.status == Gitlab::SecretDetection::Core::Status::FOUND
-      
+
       @secrets_detected << {
         context: context_id,
         type: finding.type,
@@ -648,11 +671,11 @@ class ClaudeConversationExporter
         description: finding.description
       }
     end
-    
+
     # Apply GitLab's masker to the entire content
     # This will mask anything that looks like a secret using their proven logic
     redacted_content = mask_potential_secrets(original_content)
-    
+
     redacted_content
   rescue StandardError => e
     puts "Warning: Secret detection/redaction failed for #{context_id}: #{e.message}"
@@ -664,7 +687,7 @@ class ClaudeConversationExporter
     # Split into words and mask any that look like secrets
     # This is a conservative approach that uses GitLab's proven masking logic
     words = content.split(/(\s+)/)
-    
+
     masked_words = words.map do |word|
       # Only mask words that are likely to be secrets (long, alphanumeric)
       if word.length >= 20 && word.match?(/^[A-Za-z0-9+\/\-_]+$/)
@@ -673,7 +696,7 @@ class ClaudeConversationExporter
         word
       end
     end
-    
+
     masked_words.join
   end
 
