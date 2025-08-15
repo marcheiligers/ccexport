@@ -17,7 +17,7 @@ class ClaudeConversationExporter
     def generate_preview(output_path_or_dir, open_browser = true, leaf_summaries = [], template_name = 'default', silent = false)
       # Helper method for output
       output_helper = lambda { |message| puts message unless silent }
-      
+
       # Handle both directory and specific file paths
       if output_path_or_dir.end_with?('.md') && File.exist?(output_path_or_dir)
         # Specific markdown file provided
@@ -44,6 +44,7 @@ class ClaudeConversationExporter
       end
 
       # Use cmark-gfm to convert markdown to HTML with --unsafe for collapsed sections
+      # The --unsafe flag prevents escaping in code blocks
       md_html = `cmark-gfm --unsafe --extension table --extension strikethrough --extension autolink --extension tagfilter --extension tasklist "#{latest_md}"`
 
       if $?.exitstatus != 0
@@ -95,7 +96,7 @@ class ClaudeConversationExporter
 
       # Add initialization code to automatically highlight code blocks
       init_js = <<~JS
-        
+
         /* Initialize Prism.js */
         if (typeof window !== 'undefined' && window.document) {
             document.addEventListener('DOMContentLoaded', function() {
@@ -224,8 +225,44 @@ class ClaudeConversationExporter
 
   private
 
+
   def output(message)
     puts message unless @silent
+  end
+
+  def detect_language_from_path(file_path)
+    return '' if file_path.nil? || file_path.empty?
+    
+    file_ext = File.extname(file_path).downcase
+    file_name = File.basename(file_path)
+    
+    case file_ext
+    when '.rb' then 'ruby'
+    when '.js' then 'javascript'
+    when '.ts' then 'typescript'
+    when '.py' then 'python'
+    when '.java' then 'java'
+    when '.cpp', '.cc', '.cxx' then 'cpp'
+    when '.c' then 'c'
+    when '.h' then 'c'
+    when '.html' then 'html'
+    when '.css' then 'css'
+    when '.scss' then 'scss'
+    when '.json' then 'json'
+    when '.yaml', '.yml' then 'yaml'
+    when '.xml' then 'xml'
+    when '.md' then 'markdown'
+    when '.sh' then 'bash'
+    when '.sql' then 'sql'
+    else
+      # Check common file names without extensions
+      case file_name.downcase
+      when 'gemfile', 'rakefile', 'guardfile', 'capfile', 'vagrantfile' then 'ruby'
+      when 'makefile' then 'makefile'
+      when 'dockerfile' then 'dockerfile'
+      else ''
+      end
+    end
   end
 
   def track_skipped_message(line_index, reason, data = nil)
@@ -736,7 +773,8 @@ class ClaudeConversationExporter
   def escape_for_code_block(content)
     # First escape HTML entities, but don't escape backticks since we're handling them
     # with dynamic backtick counts
-    escape_html(content)
+    # escape_html(content)
+    content
   end
 
   # Fix nested backticks in regular message content
@@ -782,28 +820,7 @@ class ClaudeConversationExporter
 
       # Format content in appropriate code block
       if tool_input['content']
-        # Determine file extension for syntax highlighting
-        extension = File.extname(tool_input['file_path']).downcase
-        language = case extension
-                   when '.rb'
-                     'ruby'
-                   when '.js'
-                     'javascript'
-                   when '.py'
-                     'python'
-                   when '.ts'
-                     'typescript'
-                   when '.json'
-                     'json'
-                   when '.md'
-                     'markdown'
-                   when '.yml', '.yaml'
-                     'yaml'
-                   when '.sh'
-                     'bash'
-                   else
-                     ''
-                   end
+        language = detect_language_from_path(tool_input['file_path'])
 
         # Use appropriate number of backticks to wrap content that may contain backticks
         backticks = determine_backticks_needed(tool_input['content'])
@@ -837,27 +854,7 @@ class ClaudeConversationExporter
       markdown << ""
 
       # Determine file extension for syntax highlighting
-      extension = File.extname(tool_input['file_path']).downcase
-      language = case extension
-                 when '.rb'
-                   'ruby'
-                 when '.js'
-                   'javascript'
-                 when '.py'
-                   'python'
-                 when '.ts'
-                   'typescript'
-                 when '.json'
-                   'json'
-                 when '.md'
-                   'markdown'
-                 when '.yml', '.yaml'
-                   'yaml'
-                 when '.sh'
-                   'bash'
-                 else
-                   ''
-                 end
+      language = detect_language_from_path(tool_input['file_path'])
 
       if tool_input['old_string'] && tool_input['new_string']
         old_backticks = determine_backticks_needed(tool_input['old_string'])
@@ -883,6 +880,24 @@ class ClaudeConversationExporter
       markdown << "<summary>#{tool_name}</summary>"
       markdown << ""
       markdown << format_todo_list(tool_input['todos'])
+    # Special formatting for Write tool to unescape content
+    elsif tool_name == 'Write' && tool_input['content']
+      markdown << "<summary>#{tool_name}: #{tool_input['file_path']}</summary>"
+      markdown << ""
+      if tool_input['content'].is_a?(String)
+        # Detect language from file extension and common file names
+        language = detect_language_from_path(tool_input['file_path'])
+
+        markdown << "```#{language}"
+        # Unescape the JSON string content
+        unescaped_content = tool_input['content'].gsub('\\n', "\n").gsub('\\t', "\t").gsub('\\"', '"').gsub('\\\\', '\\')
+        markdown << escape_backticks(unescaped_content)
+        markdown << "```"
+      else
+        markdown << "```json"
+        markdown << JSON.pretty_generate(tool_input)
+        markdown << "```"
+      end
     else
       # Default JSON formatting for other tools
       markdown << "<summary>#{tool_name}</summary>"

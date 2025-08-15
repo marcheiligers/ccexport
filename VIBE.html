@@ -67,16 +67,20 @@ if (typeof window !== 'undefined' && window.document) {
         }
 
         /* Code blocks - integrate with Prism.js */
-        pre[class*="language-"] {
+        pre[class*="language-"], 
+        pre:not([class*="language-"]) {
             background: var(--dark-blue) !important;
             border-radius: 12px;
             overflow-x: auto;
             margin: 16px 0;
+            padding: 16px;
         }
 
-        code[class*="language-"] {
+        code[class*="language-"],
+        pre:not([class*="language-"]) > code {
             color: var(--light-blue) !important;
             text-shadow: none !important;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
         /* Inline code (no language class) */
@@ -296,18 +300,18 @@ if (typeof window !== 'undefined' && window.document) {
 <summary>Write lib/claude_conversation_exporter.rb</summary>
 <pre><code class="language-ruby">#!/usr/bin/env ruby
 
-require &amp;#39;json&amp;#39;
-require &amp;#39;fileutils&amp;#39;
-require &amp;#39;time&amp;#39;
+require 'json'
+require 'fileutils'
+require 'time'
 
 class ClaudeConversationExporter
-  class &amp;lt;&amp;lt; self
-    def export(project_path = Dir.pwd, output_dir = &amp;#39;claude-conversations&amp;#39;)
+  class &lt;&lt; self
+    def export(project_path = Dir.pwd, output_dir = 'claude-conversations')
       new(project_path, output_dir).export
     end
   end
 
-  def initialize(project_path = Dir.pwd, output_dir = &amp;#39;claude-conversations&amp;#39;)
+  def initialize(project_path = Dir.pwd, output_dir = 'claude-conversations')
     @project_path = File.expand_path(project_path)
     @output_dir = File.expand_path(output_dir)
     @claude_home = find_claude_home
@@ -315,13 +319,13 @@ class ClaudeConversationExporter
 
   def export
     session_dir = find_session_directory
-    session_files = Dir.glob(File.join(session_dir, &amp;#39;*.jsonl&amp;#39;)).sort
+    session_files = Dir.glob(File.join(session_dir, '*.jsonl')).sort
     
-    raise &amp;quot;No session files found in #{session_dir}&amp;quot; if session_files.empty?
+    raise &quot;No session files found in #{session_dir}&quot; if session_files.empty?
 
     FileUtils.mkdir_p(@output_dir)
     
-    puts &amp;quot;Found #{session_files.length} session file(s)&amp;quot;
+    puts &quot;Found #{session_files.length} session file(s)&quot;
     
     exported_count = 0
     total_messages = 0
@@ -335,15 +339,15 @@ class ClaudeConversationExporter
       
       File.write(output_path, format_markdown(session))
       
-      puts &amp;quot;✓ #{session[:session_id]}: #{session[:messages].length} messages&amp;quot;
+      puts &quot;✓ #{session[:session_id]}: #{session[:messages].length} messages&quot;
       exported_count += 1
       total_messages += session[:messages].length
     end
     
-    puts &amp;quot;\nExported #{exported_count} conversations (#{total_messages} total messages) to #{@output_dir}/&amp;quot;
+    puts &quot;\nExported #{exported_count} conversations (#{total_messages} total messages) to #{@output_dir}/&quot;
     
     # Send notification as requested
-    system(&amp;quot;osascript -e \&amp;quot;display notification \\\&amp;quot;Exported #{exported_count} conversations\\\&amp;quot; sound name \\\&amp;quot;Ping\\\&amp;quot; with title \\\&amp;quot;Claude Code\\\&amp;quot;\&amp;quot;&amp;quot;)
+    system(&quot;osascript -e \&quot;display notification \\\&quot;Exported #{exported_count} conversations\\\&quot; sound name \\\&quot;Ping\\\&quot; with title \\\&quot;Claude Code\\\&quot;\&quot;&quot;)
     
     { sessions_exported: exported_count, total_messages: total_messages }
   end
@@ -352,41 +356,41 @@ class ClaudeConversationExporter
 
   def find_claude_home
     candidates = [
-      File.join(Dir.home, &amp;#39;.claude&amp;#39;),
-      File.join(Dir.home, &amp;#39;.config&amp;#39;, &amp;#39;claude&amp;#39;)
+      File.join(Dir.home, '.claude'),
+      File.join(Dir.home, '.config', 'claude')
     ]
     
-    claude_home = candidates.find { |path| Dir.exist?(File.join(path, &amp;#39;projects&amp;#39;)) }
-    raise &amp;quot;Claude home directory not found. Searched: #{candidates.join(&amp;#39;, &amp;#39;)}&amp;quot; unless claude_home
+    claude_home = candidates.find { |path| Dir.exist?(File.join(path, 'projects')) }
+    raise &quot;Claude home directory not found. Searched: #{candidates.join(', ')}&quot; unless claude_home
     
     claude_home
   end
 
   def find_session_directory
     encoded_path = encode_path(@project_path)
-    session_dir = File.join(@claude_home, &amp;#39;projects&amp;#39;, encoded_path)
+    session_dir = File.join(@claude_home, 'projects', encoded_path)
     
     return session_dir if Dir.exist?(session_dir)
     
     # Fallback: search for directories containing project name
     project_name = File.basename(@project_path)
-    projects_dir = File.join(@claude_home, &amp;#39;projects&amp;#39;)
+    projects_dir = File.join(@claude_home, 'projects')
     
     candidates = Dir.entries(projects_dir)
-                   .select { |dir| dir.include?(project_name) &amp;amp;&amp;amp; Dir.exist?(File.join(projects_dir, dir)) }
+                   .select { |dir| dir.include?(project_name) &amp;&amp; Dir.exist?(File.join(projects_dir, dir)) }
                    .map { |dir| File.join(projects_dir, dir) }
     
-    raise &amp;quot;No Claude sessions found for project: #{@project_path}&amp;quot; if candidates.empty?
+    raise &quot;No Claude sessions found for project: #{@project_path}&quot; if candidates.empty?
     
     candidates.first
   end
 
   def encode_path(path)
-    path.gsub(&amp;#39;/&amp;#39;, &amp;#39;-&amp;#39;).gsub(&amp;#39;_&amp;#39;, &amp;#39;-&amp;#39;)
+    path.gsub('/', '-').gsub('_', '-')
   end
 
   def process_session(session_file)
-    session_id = File.basename(session_file, &amp;#39;.jsonl&amp;#39;)
+    session_id = File.basename(session_file, '.jsonl')
     messages = []
     
     File.readlines(session_file, chomp: true).each_with_index do |line, index|
@@ -395,25 +399,25 @@ class ClaudeConversationExporter
       begin
         data = JSON.parse(line)
         message = extract_message(data, index)
-        messages &amp;lt;&amp;lt; message if message
-      rescue JSON::ParserError =&amp;gt; e
-        puts &amp;quot;Warning: Skipping invalid JSON at line #{index + 1}: #{e.message}&amp;quot;
+        messages &lt;&lt; message if message
+      rescue JSON::ParserError =&gt; e
+        puts &quot;Warning: Skipping invalid JSON at line #{index + 1}: #{e.message}&quot;
       end
     end
     
     {
       session_id: session_id,
       messages: messages,
-      first_timestamp: messages.first&amp;amp;.dig(:timestamp),
-      last_timestamp: messages.last&amp;amp;.dig(:timestamp)
+      first_timestamp: messages.first&amp;.dig(:timestamp),
+      last_timestamp: messages.last&amp;.dig(:timestamp)
     }
   end
 
   def extract_message(data, index)
-    return nil unless data[&amp;#39;message&amp;#39;] &amp;amp;&amp;amp; data[&amp;#39;message&amp;#39;][&amp;#39;role&amp;#39;]
+    return nil unless data['message'] &amp;&amp; data['message']['role']
     
-    role = data[&amp;#39;message&amp;#39;][&amp;#39;role&amp;#39;]
-    content = data[&amp;#39;message&amp;#39;][&amp;#39;content&amp;#39;]
+    role = data['message']['role']
+    content = data['message']['content']
     
     # Handle tool calls and results
     tool_calls = extract_tool_calls(content)
@@ -425,7 +429,7 @@ class ClaudeConversationExporter
     {
       role: role,
       content: content.is_a?(String) ? content : JSON.pretty_generate(content),
-      timestamp: data[&amp;#39;timestamp&amp;#39;] || Time.now.iso8601,
+      timestamp: data['timestamp'] || Time.now.iso8601,
       index: index,
       tool_calls: tool_calls,
       tool_results: tool_results
@@ -436,108 +440,108 @@ class ClaudeConversationExporter
     return [] unless content.is_a?(String)
     
     tool_calls = []
-    content.scan(/&amp;lt;function_calls&amp;gt;(.*?)&amp;lt;\/antml:function_calls&amp;gt;/m) do |match|
-      tool_calls &amp;lt;&amp;lt; { type: &amp;#39;function_calls&amp;#39;, content: match[0].strip }
+    content.scan(/&lt;function_calls&gt;(.*?)&lt;\/antml:function_calls&gt;/m) do |match|
+      tool_calls &lt;&lt; { type: 'function_calls', content: match[0].strip }
     end
     
     tool_calls
   end
 
   def extract_tool_results(data)
-    return [] unless data[&amp;#39;message&amp;#39;] &amp;amp;&amp;amp; data[&amp;#39;message&amp;#39;][&amp;#39;content&amp;#39;].is_a?(Array)
+    return [] unless data['message'] &amp;&amp; data['message']['content'].is_a?(Array)
     
-    data[&amp;#39;message&amp;#39;][&amp;#39;content&amp;#39;].select { |item| item[&amp;#39;type&amp;#39;] == &amp;#39;tool_result&amp;#39; }
+    data['message']['content'].select { |item| item['type'] == 'tool_result' }
   end
 
   def system_generated?(content)
     return false unless content.is_a?(String)
     
     skip_patterns = [
-      &amp;#39;Caveat: The messages below were generated&amp;#39;,
-      &amp;#39;&amp;lt;command-name&amp;gt;&amp;#39;,
-      &amp;#39;&amp;lt;local-command-stdout&amp;gt;&amp;#39;,
-      &amp;#39;&amp;lt;local-command-stderr&amp;gt;&amp;#39;,
-      &amp;#39;&amp;lt;system-reminder&amp;gt;&amp;#39;
+      'Caveat: The messages below were generated',
+      '&lt;command-name&gt;',
+      '&lt;local-command-stdout&gt;',
+      '&lt;local-command-stderr&gt;',
+      '&lt;system-reminder&gt;'
     ]
     
     skip_patterns.any? { |pattern| content.include?(pattern) }
   end
 
   def generate_filename(session)
-    timestamp = Time.now.strftime(&amp;#39;%Y%m%d-%H%M%S&amp;#39;)
+    timestamp = Time.now.strftime('%Y%m%d-%H%M%S')
     title = generate_title(session[:messages])
-    &amp;quot;#{timestamp}-#{title}-#{session[:session_id]}.md&amp;quot;
+    &quot;#{timestamp}-#{title}-#{session[:session_id]}.md&quot;
   end
 
   def generate_title(messages)
-    first_user_message = messages.find { |m| m[:role] == &amp;#39;user&amp;#39; }
-    return &amp;#39;untitled&amp;#39; unless first_user_message
+    first_user_message = messages.find { |m| m[:role] == 'user' }
+    return 'untitled' unless first_user_message
     
     content = first_user_message[:content]
-    title = content.split(&amp;quot;\n&amp;quot;).first.to_s
-                  .gsub(/^(drop it\.?|real|actually|honestly)[\s,.]*/i, &amp;#39;&amp;#39;)
+    title = content.split(&quot;\n&quot;).first.to_s
+                  .gsub(/^(drop it\.?|real|actually|honestly)[\s,.]*/i, '')
                   .strip
                   .split(/[\s\/]+/)
                   .first(5)
-                  .join(&amp;#39;-&amp;#39;)
-                  .gsub(/[^a-zA-Z0-9-]/, &amp;#39;&amp;#39;)
+                  .join('-')
+                  .gsub(/[^a-zA-Z0-9-]/, '')
                   .downcase
     
-    title.empty? ? &amp;#39;untitled&amp;#39; : title[0, 50]
+    title.empty? ? 'untitled' : title[0, 50]
   end
 
   def format_markdown(session)
     md = []
-    md &amp;lt;&amp;lt; &amp;quot;# Claude Code Conversation&amp;quot;
-    md &amp;lt;&amp;lt; &amp;quot;&amp;quot;
-    md &amp;lt;&amp;lt; &amp;quot;**Session:** `#{session[:session_id]}`  &amp;quot;
+    md &lt;&lt; &quot;# Claude Code Conversation&quot;
+    md &lt;&lt; &quot;&quot;
+    md &lt;&lt; &quot;**Session:** `#{session[:session_id]}`  &quot;
     
     if session[:first_timestamp]
-      md &amp;lt;&amp;lt; &amp;quot;**Started:** #{Time.parse(session[:first_timestamp]).strftime(&amp;#39;%B %d, %Y at %I:%M %p&amp;#39;)}&amp;quot;
+      md &lt;&lt; &quot;**Started:** #{Time.parse(session[:first_timestamp]).strftime('%B %d, %Y at %I:%M %p')}&quot;
     end
     
     if session[:last_timestamp]
-      md &amp;lt;&amp;lt; &amp;quot;**Last activity:** #{Time.parse(session[:last_timestamp]).strftime(&amp;#39;%B %d, %Y at %I:%M %p&amp;#39;)}&amp;quot;
+      md &lt;&lt; &quot;**Last activity:** #{Time.parse(session[:last_timestamp]).strftime('%B %d, %Y at %I:%M %p')}&quot;
     end
     
-    user_count = session[:messages].count { |m| m[:role] == &amp;#39;user&amp;#39; }
-    assistant_count = session[:messages].count { |m| m[:role] == &amp;#39;assistant&amp;#39; }
+    user_count = session[:messages].count { |m| m[:role] == 'user' }
+    assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
     
-    md &amp;lt;&amp;lt; &amp;quot;**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)&amp;quot;
-    md &amp;lt;&amp;lt; &amp;quot;&amp;quot;
-    md &amp;lt;&amp;lt; &amp;quot;---&amp;quot;
-    md &amp;lt;&amp;lt; &amp;quot;&amp;quot;
+    md &lt;&lt; &quot;**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)&quot;
+    md &lt;&lt; &quot;&quot;
+    md &lt;&lt; &quot;---&quot;
+    md &lt;&lt; &quot;&quot;
     
     session[:messages].each_with_index do |message, index|
       md.concat(format_message(message, index + 1))
-      md &amp;lt;&amp;lt; &amp;quot;&amp;quot; unless index == session[:messages].length - 1
+      md &lt;&lt; &quot;&quot; unless index == session[:messages].length - 1
     end
     
-    md.join(&amp;quot;\n&amp;quot;)
+    md.join(&quot;\n&quot;)
   end
 
   def format_message(message, number)
     lines = []
     
     case message[:role]
-    when &amp;#39;user&amp;#39;
-      lines &amp;lt;&amp;lt; &amp;quot;## 👤 User&amp;quot;
-    when &amp;#39;assistant&amp;#39;
-      lines &amp;lt;&amp;lt; &amp;quot;## 🤖 Assistant&amp;quot;
-    when &amp;#39;system&amp;#39;
-      lines &amp;lt;&amp;lt; &amp;quot;## ⚙️ System&amp;quot;
+    when 'user'
+      lines &lt;&lt; &quot;## 👤 User&quot;
+    when 'assistant'
+      lines &lt;&lt; &quot;## 🤖 Assistant&quot;
+    when 'system'
+      lines &lt;&lt; &quot;## ⚙️ System&quot;
     end
     
-    lines &amp;lt;&amp;lt; &amp;quot;&amp;quot;
+    lines &lt;&lt; &quot;&quot;
     
     # Format tool calls if present
-    if message[:tool_calls] &amp;amp;&amp;amp; !message[:tool_calls].empty?
-      lines &amp;lt;&amp;lt; format_tool_calls(message[:content])
+    if message[:tool_calls] &amp;&amp; !message[:tool_calls].empty?
+      lines &lt;&lt; format_tool_calls(message[:content])
     else
-      lines &amp;lt;&amp;lt; message[:content]
+      lines &lt;&lt; message[:content]
     end
     
-    lines &amp;lt;&amp;lt; &amp;quot;&amp;quot;
+    lines &lt;&lt; &quot;&quot;
     
     lines
   end
@@ -547,20 +551,20 @@ class ClaudeConversationExporter
     formatted = content.dup
     
     # Replace function_calls blocks with formatted versions
-    formatted.gsub!(/&amp;lt;function_calls&amp;gt;(.*?)&amp;lt;\/antml:function_calls&amp;gt;/m) do |match|
+    formatted.gsub!(/&lt;function_calls&gt;(.*?)&lt;\/antml:function_calls&gt;/m) do |match|
       tool_content = $1.strip
       
       # Try to extract tool invocations
       tools = []
-      tool_content.scan(/&amp;lt;invoke name=&amp;quot;([^&amp;quot;]+)&amp;quot;&amp;gt;(.*?)&amp;lt;\/antml:invoke&amp;gt;/m) do |tool_name, params|
-        tools &amp;lt;&amp;lt; { name: tool_name, params: params.strip }
+      tool_content.scan(/&lt;invoke name=&quot;([^&quot;]+)&quot;&gt;(.*?)&lt;\/antml:invoke&gt;/m) do |tool_name, params|
+        tools &lt;&lt; { name: tool_name, params: params.strip }
       end
       
       if tools.any?
-        tool_list = tools.map { |tool| &amp;quot;- **#{tool[:name]}**&amp;quot; }.join(&amp;quot;\n&amp;quot;)
-        &amp;quot;**🔧 Tool calls:**\n#{tool_list}\n\n&amp;lt;details&amp;gt;\n&amp;lt;summary&amp;gt;View details&amp;lt;/summary&amp;gt;\n\n```xml\n#{tool_content}\n```\n\n&amp;lt;/details&amp;gt;&amp;quot;
+        tool_list = tools.map { |tool| &quot;- **#{tool[:name]}**&quot; }.join(&quot;\n&quot;)
+        &quot;**🔧 Tool calls:**\n#{tool_list}\n\n&lt;details&gt;\n&lt;summary&gt;View details&lt;/summary&gt;\n\n```xml\n#{tool_content}\n```\n\n&lt;/details&gt;&quot;
       else
-        &amp;quot;**🔧 Tool call:**\n\n```xml\n#{tool_content}\n```&amp;quot;
+        &quot;**🔧 Tool call:**\n\n```xml\n#{tool_content}\n```&quot;
       end
     end
     
@@ -593,9 +597,9 @@ end
 <h2>🤖🔧 Assistant</h2>
 <details>
 <summary>Write Gemfile</summary>
-<pre><code>source &amp;#39;https://rubygems.org&amp;#39;
+<pre><code class="language-ruby">source 'https://rubygems.org'
 
-gem &amp;#39;rspec&amp;#39;, &amp;#39;~&amp;gt; 3.12&amp;#39;
+gem 'rspec', '~&gt; 3.12'
 </code></pre>
 </details>
 <details>
@@ -606,7 +610,7 @@ gem &amp;#39;rspec&amp;#39;, &amp;#39;~&amp;gt; 3.12&amp;#39;
 <h2>🤖🔧 Assistant</h2>
 <details>
 <summary>Write spec/spec_helper.rb</summary>
-<pre><code class="language-ruby">require_relative &amp;#39;../lib/claude_conversation_exporter&amp;#39;
+<pre><code class="language-ruby">require_relative '../lib/claude_conversation_exporter'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
@@ -629,18 +633,18 @@ end
 <h2>🤖🔧 Assistant</h2>
 <details>
 <summary>Write spec/claude_conversation_exporter_spec.rb</summary>
-<pre><code class="language-ruby">require &amp;#39;spec_helper&amp;#39;
-require &amp;#39;tmpdir&amp;#39;
-require &amp;#39;fileutils&amp;#39;
+<pre><code class="language-ruby">require 'spec_helper'
+require 'tmpdir'
+require 'fileutils'
 
 RSpec.describe ClaudeConversationExporter do
   let(:temp_dir) { Dir.mktmpdir }
-  let(:claude_home) { File.join(temp_dir, &amp;#39;.claude&amp;#39;) }
-  let(:projects_dir) { File.join(claude_home, &amp;#39;projects&amp;#39;) }
-  let(:project_path) { &amp;#39;/Users/test/my_project&amp;#39; }
-  let(:encoded_project_path) { &amp;#39;-Users-test-my-project&amp;#39; }
+  let(:claude_home) { File.join(temp_dir, '.claude') }
+  let(:projects_dir) { File.join(claude_home, 'projects') }
+  let(:project_path) { '/Users/test/my_project' }
+  let(:encoded_project_path) { '-Users-test-my-project' }
   let(:session_dir) { File.join(projects_dir, encoded_project_path) }
-  let(:output_dir) { File.join(temp_dir, &amp;#39;output&amp;#39;) }
+  let(:output_dir) { File.join(temp_dir, 'output') }
 
   before do
     FileUtils.mkdir_p(session_dir)
@@ -651,31 +655,31 @@ RSpec.describe ClaudeConversationExporter do
     FileUtils.rm_rf(temp_dir)
   end
 
-  describe &amp;#39;#initialize&amp;#39; do
-    it &amp;#39;finds Claude home directory&amp;#39; do
+  describe '#initialize' do
+    it 'finds Claude home directory' do
       exporter = described_class.new(project_path, output_dir)
       expect(exporter.instance_variable_get(:@claude_home)).to eq(claude_home)
     end
 
-    it &amp;#39;raises error when Claude home not found&amp;#39; do
+    it 'raises error when Claude home not found' do
       FileUtils.rm_rf(claude_home)
       expect { described_class.new(project_path, output_dir) }.to raise_error(/Claude home directory not found/)
     end
   end
 
-  describe &amp;#39;#export&amp;#39; do
-    let(:session_file) { File.join(session_dir, &amp;#39;test-session.jsonl&amp;#39;) }
+  describe '#export' do
+    let(:session_file) { File.join(session_dir, 'test-session.jsonl') }
     let(:jsonl_content) do
       [
         {
-          &amp;#39;message&amp;#39; =&amp;gt; { &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;user&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;Hello, how are you?&amp;#39; },
-          &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+          'message' =&gt; { 'role' =&gt; 'user', 'content' =&gt; 'Hello, how are you?' },
+          'timestamp' =&gt; '2024-01-01T10:00:00Z'
         },
         {
-          &amp;#39;message&amp;#39; =&amp;gt; { &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;I am doing well, thank you!&amp;#39; },
-          &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:30Z&amp;#39;
+          'message' =&gt; { 'role' =&gt; 'assistant', 'content' =&gt; 'I am doing well, thank you!' },
+          'timestamp' =&gt; '2024-01-01T10:00:30Z'
         }
-      ].map(&amp;amp;:to_json).join(&amp;quot;\n&amp;quot;)
+      ].map(&amp;:to_json).join(&quot;\n&quot;)
     end
 
     before do
@@ -683,29 +687,29 @@ RSpec.describe ClaudeConversationExporter do
       allow(system).to receive(:system) # Mock notification
     end
 
-    it &amp;#39;exports conversations to markdown&amp;#39; do
+    it 'exports conversations to markdown' do
       result = described_class.new(project_path, output_dir).export
       
       expect(result[:sessions_exported]).to eq(1)
       expect(result[:total_messages]).to eq(2)
-      expect(Dir.glob(File.join(output_dir, &amp;#39;*.md&amp;#39;)).length).to eq(1)
+      expect(Dir.glob(File.join(output_dir, '*.md')).length).to eq(1)
     end
 
-    it &amp;#39;creates properly formatted markdown&amp;#39; do
+    it 'creates properly formatted markdown' do
       described_class.new(project_path, output_dir).export
       
-      markdown_file = Dir.glob(File.join(output_dir, &amp;#39;*.md&amp;#39;)).first
+      markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
       
-      expect(content).to include(&amp;#39;# Claude Code Conversation&amp;#39;)
-      expect(content).to include(&amp;#39;## 👤 User&amp;#39;)
-      expect(content).to include(&amp;#39;## 🤖 Assistant&amp;#39;)
-      expect(content).to include(&amp;#39;Hello, how are you?&amp;#39;)
-      expect(content).to include(&amp;#39;I am doing well, thank you!&amp;#39;)
+      expect(content).to include('# Claude Code Conversation')
+      expect(content).to include('## 👤 User')
+      expect(content).to include('## 🤖 Assistant')
+      expect(content).to include('Hello, how are you?')
+      expect(content).to include('I am doing well, thank you!')
     end
 
-    it &amp;#39;handles empty session files gracefully&amp;#39; do
-      File.write(session_file, &amp;#39;&amp;#39;)
+    it 'handles empty session files gracefully' do
+      File.write(session_file, '')
       
       result = described_class.new(project_path, output_dir).export
       
@@ -713,21 +717,21 @@ RSpec.describe ClaudeConversationExporter do
       expect(result[:total_messages]).to eq(0)
     end
 
-    it &amp;#39;skips system-generated messages&amp;#39; do
+    it 'skips system-generated messages' do
       system_content = [
         {
-          &amp;#39;message&amp;#39; =&amp;gt; { &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;user&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;Valid message&amp;#39; },
-          &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+          'message' =&gt; { 'role' =&gt; 'user', 'content' =&gt; 'Valid message' },
+          'timestamp' =&gt; '2024-01-01T10:00:00Z'
         },
         {
-          &amp;#39;message&amp;#39; =&amp;gt; { &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;system&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;&amp;lt;system-reminder&amp;gt;Skip this&amp;lt;/system-reminder&amp;gt;&amp;#39; },
-          &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:15Z&amp;#39;
+          'message' =&gt; { 'role' =&gt; 'system', 'content' =&gt; '&lt;system-reminder&gt;Skip this&lt;/system-reminder&gt;' },
+          'timestamp' =&gt; '2024-01-01T10:00:15Z'
         },
         {
-          &amp;#39;message&amp;#39; =&amp;gt; { &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;Another valid message&amp;#39; },
-          &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:30Z&amp;#39;
+          'message' =&gt; { 'role' =&gt; 'assistant', 'content' =&gt; 'Another valid message' },
+          'timestamp' =&gt; '2024-01-01T10:00:30Z'
         }
-      ].map(&amp;amp;:to_json).join(&amp;quot;\n&amp;quot;)
+      ].map(&amp;:to_json).join(&quot;\n&quot;)
       
       File.write(session_file, system_content)
       
@@ -737,65 +741,65 @@ RSpec.describe ClaudeConversationExporter do
     end
   end
 
-  describe &amp;#39;#encode_path&amp;#39; do
-    it &amp;#39;encodes paths correctly&amp;#39; do
+  describe '#encode_path' do
+    it 'encodes paths correctly' do
       exporter = described_class.new(project_path, output_dir)
-      encoded = exporter.send(:encode_path, &amp;#39;/Users/test/my_project&amp;#39;)
-      expect(encoded).to eq(&amp;#39;-Users-test-my-project&amp;#39;)
+      encoded = exporter.send(:encode_path, '/Users/test/my_project')
+      expect(encoded).to eq('-Users-test-my-project')
     end
 
-    it &amp;#39;handles underscores&amp;#39; do
+    it 'handles underscores' do
       exporter = described_class.new(project_path, output_dir)
-      encoded = exporter.send(:encode_path, &amp;#39;/Users/test/my_project_name&amp;#39;)
-      expect(encoded).to eq(&amp;#39;-Users-test-my-project-name&amp;#39;)
+      encoded = exporter.send(:encode_path, '/Users/test/my_project_name')
+      expect(encoded).to eq('-Users-test-my-project-name')
     end
   end
 
-  describe &amp;#39;#generate_title&amp;#39; do
-    it &amp;#39;generates title from first user message&amp;#39; do
+  describe '#generate_title' do
+    it 'generates title from first user message' do
       exporter = described_class.new(project_path, output_dir)
       messages = [
-        { role: &amp;#39;user&amp;#39;, content: &amp;#39;Help me build a todo app&amp;#39; },
-        { role: &amp;#39;assistant&amp;#39;, content: &amp;#39;Sure!&amp;#39; }
+        { role: 'user', content: 'Help me build a todo app' },
+        { role: 'assistant', content: 'Sure!' }
       ]
       
       title = exporter.send(:generate_title, messages)
-      expect(title).to eq(&amp;#39;help-me-build-a-todo&amp;#39;)
+      expect(title).to eq('help-me-build-a-todo')
     end
 
-    it &amp;#39;sanitizes titles properly&amp;#39; do
+    it 'sanitizes titles properly' do
       exporter = described_class.new(project_path, output_dir)
       messages = [
-        { role: &amp;#39;user&amp;#39;, content: &amp;#39;Fix bug in /api/users endpoint!&amp;#39; }
+        { role: 'user', content: 'Fix bug in /api/users endpoint!' }
       ]
       
       title = exporter.send(:generate_title, messages)
-      expect(title).to eq(&amp;#39;fix-bug-in-api-users&amp;#39;)
+      expect(title).to eq('fix-bug-in-api-users')
     end
 
-    it &amp;#39;returns untitled for empty messages&amp;#39; do
+    it 'returns untitled for empty messages' do
       exporter = described_class.new(project_path, output_dir)
       title = exporter.send(:generate_title, [])
-      expect(title).to eq(&amp;#39;untitled&amp;#39;)
+      expect(title).to eq('untitled')
     end
   end
 
-  describe &amp;#39;#system_generated?&amp;#39; do
+  describe '#system_generated?' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;identifies system-generated content&amp;#39; do
-      expect(exporter.send(:system_generated?, &amp;#39;&amp;lt;system-reminder&amp;gt;Test&amp;lt;/system-reminder&amp;gt;&amp;#39;)).to be true
-      expect(exporter.send(:system_generated?, &amp;#39;&amp;lt;command-name&amp;gt;test&amp;lt;/command-name&amp;gt;&amp;#39;)).to be true
-      expect(exporter.send(:system_generated?, &amp;#39;Regular user message&amp;#39;)).to be false
+    it 'identifies system-generated content' do
+      expect(exporter.send(:system_generated?, '&lt;system-reminder&gt;Test&lt;/system-reminder&gt;')).to be true
+      expect(exporter.send(:system_generated?, '&lt;command-name&gt;test&lt;/command-name&gt;')).to be true
+      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
     end
   end
 
-  describe &amp;#39;.export&amp;#39; do
-    let(:session_file) { File.join(session_dir, &amp;#39;test-session.jsonl&amp;#39;) }
+  describe '.export' do
+    let(:session_file) { File.join(session_dir, 'test-session.jsonl') }
     let(:jsonl_content) do
       {
-        &amp;#39;message&amp;#39; =&amp;gt; { &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;user&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;Test message&amp;#39; },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'message' =&gt; { 'role' =&gt; 'user', 'content' =&gt; 'Test message' },
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }.to_json
     end
 
@@ -804,11 +808,11 @@ RSpec.describe ClaudeConversationExporter do
       allow(system).to receive(:system)
     end
 
-    it &amp;#39;provides class method for easy export&amp;#39; do
+    it 'provides class method for easy export' do
       allow(Dir).to receive(:pwd).and_return(project_path)
       result = described_class.export
       
-      expect(result[:sessions_exported]).to be &amp;gt;= 0
+      expect(result[:sessions_exported]).to be &gt;= 0
       expect(result).to have_key(:total_messages)
     end
   end
@@ -861,10 +865,10 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 
 ### Simple Usage
 
-Run the exporter in any directory where you&amp;#39;ve used Claude Code:
+Run the exporter in any directory where you've used Claude Code:
 
 ```ruby
-require_relative &amp;#39;lib/claude_conversation_exporter&amp;#39;
+require_relative 'lib/claude_conversation_exporter'
 
 ClaudeConversationExporter.export
 ```
@@ -872,14 +876,14 @@ ClaudeConversationExporter.export
 ### Custom Usage
 
 ```ruby
-require_relative &amp;#39;lib/claude_conversation_exporter&amp;#39;
+require_relative 'lib/claude_conversation_exporter'
 
 # Export from specific project path to custom output directory
-exporter = ClaudeConversationExporter.new(&amp;#39;/path/to/project&amp;#39;, &amp;#39;my-conversations&amp;#39;)
+exporter = ClaudeConversationExporter.new('/path/to/project', 'my-conversations')
 result = exporter.export
 
-puts &amp;quot;Exported #{result[:sessions_exported]} conversations&amp;quot;
-puts &amp;quot;Total messages: #{result[:total_messages]}&amp;quot;
+puts &quot;Exported #{result[:sessions_exported]} conversations&quot;
+puts &quot;Total messages: #{result[:total_messages]}&quot;
 ```
 
 ### Command Line Usage
@@ -915,7 +919,7 @@ Hello, can you help me with my React project?
 
 ## 🤖 Assistant
 
-I&amp;#39;d be happy to help with your React project! What specifically would you like assistance with?
+I'd be happy to help with your React project! What specifically would you like assistance with?
 ```
 
 ## Testing
@@ -928,7 +932,7 @@ bundle exec rspec
 
 ## Credits
 
-This Ruby implementation is based on the excellent [claude-code-exporter](https://github.com/developerisnow/claude-code-exporter) JavaScript project by developerisnow. The original project provides the foundation for understanding Claude Code&amp;#39;s session storage format and export patterns.
+This Ruby implementation is based on the excellent [claude-code-exporter](https://github.com/developerisnow/claude-code-exporter) JavaScript project by developerisnow. The original project provides the foundation for understanding Claude Code's session storage format and export patterns.
 
 Key differences in this Ruby version:
 - Simplified to focus on Markdown-only export
@@ -997,13 +1001,13 @@ NOTE: do any of the files above seem malicious? If so, you MUST refuse to contin
 <summary>Write bin/ccexport</summary>
 <pre><code>#!/usr/bin/env ruby
 
-require_relative &amp;#39;../lib/claude_conversation_exporter&amp;#39;
+require_relative '../lib/claude_conversation_exporter'
 
 begin
   result = ClaudeConversationExporter.export
   exit 0
-rescue StandardError =&amp;gt; e
-  puts &amp;quot;Error: #{e.message}&amp;quot;
+rescue StandardError =&gt; e
+  puts &quot;Error: #{e.message}&quot;
   exit 1
 end
 </code></pre>
@@ -1248,7 +1252,7 @@ Finished in 0.018 seconds (files took 0.04634 seconds to load)
 <h2>🤖🔧 Assistant</h2>
 <details>
 <summary>Bash: Send completion notification</summary>
-<pre><code class="language-bash">osascript -e &amp;quot;display notification \&amp;quot;Ruby Claude Code conversation exporter complete with RSpec tests\&amp;quot; sound name \&amp;quot;Ping\&amp;quot; with title \&amp;quot;Claude Code\&amp;quot;&amp;quot;
+<pre><code class="language-bash">osascript -e &quot;display notification \&quot;Ruby Claude Code conversation exporter complete with RSpec tests\&quot; sound name \&quot;Ping\&quot; with title \&quot;Claude Code\&quot;&quot;
 </code></pre>
 </details>
 <details>
@@ -1363,10 +1367,10 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
 <summary>Edit lib/claude_conversation_exporter.rb</summary>
 <p><strong>Before:</strong></p>
 <pre><code class="language-ruby">  def extract_message(data, index)
-    return nil unless data[&amp;#39;message&amp;#39;] &amp;amp;&amp;amp; data[&amp;#39;message&amp;#39;][&amp;#39;role&amp;#39;]
+    return nil unless data['message'] &amp;&amp; data['message']['role']
     
-    role = data[&amp;#39;message&amp;#39;][&amp;#39;role&amp;#39;]
-    content = data[&amp;#39;message&amp;#39;][&amp;#39;content&amp;#39;]
+    role = data['message']['role']
+    content = data['message']['content']
     
     # Handle tool calls and results
     tool_calls = extract_tool_calls(content)
@@ -1378,7 +1382,7 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
     {
       role: role,
       content: content.is_a?(String) ? content : JSON.pretty_generate(content),
-      timestamp: data[&amp;#39;timestamp&amp;#39;] || Time.now.iso8601,
+      timestamp: data['timestamp'] || Time.now.iso8601,
       index: index,
       tool_calls: tool_calls,
       tool_results: tool_results
@@ -1387,13 +1391,13 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
 </code></pre>
 <p><strong>After:</strong></p>
 <pre><code class="language-ruby">  def extract_message(data, index)
-    return nil unless data[&amp;#39;message&amp;#39;] &amp;amp;&amp;amp; data[&amp;#39;message&amp;#39;][&amp;#39;role&amp;#39;]
+    return nil unless data['message'] &amp;&amp; data['message']['role']
     
-    role = data[&amp;#39;message&amp;#39;][&amp;#39;role&amp;#39;]
-    content = data[&amp;#39;message&amp;#39;][&amp;#39;content&amp;#39;]
+    role = data['message']['role']
+    content = data['message']['content']
     
     # Extract text content for assistant responses
-    processed_content = if role == &amp;#39;assistant&amp;#39; &amp;amp;&amp;amp; content.is_a?(Array)
+    processed_content = if role == 'assistant' &amp;&amp; content.is_a?(Array)
                           extract_text_content(content)
                         elsif content.is_a?(String)
                           content
@@ -1411,7 +1415,7 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
     {
       role: role,
       content: processed_content,
-      timestamp: data[&amp;#39;timestamp&amp;#39;] || Time.now.iso8601,
+      timestamp: data['timestamp'] || Time.now.iso8601,
       index: index,
       tool_calls: tool_calls,
       tool_results: tool_results
@@ -1483,8 +1487,8 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
     return [] unless content.is_a?(String)
     
     tool_calls = []
-    content.scan(/&amp;lt;function_calls&amp;gt;(.*?)&amp;lt;\/antml:function_calls&amp;gt;/m) do |match|
-      tool_calls &amp;lt;&amp;lt; { type: &amp;#39;function_calls&amp;#39;, content: match[0].strip }
+    content.scan(/&lt;function_calls&gt;(.*?)&lt;\/antml:function_calls&gt;/m) do |match|
+      tool_calls &lt;&lt; { type: 'function_calls', content: match[0].strip }
     end
     
     tool_calls
@@ -1495,20 +1499,20 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
     text_parts = []
     
     content_array.each do |item|
-      if item.is_a?(Hash) &amp;amp;&amp;amp; item[&amp;#39;type&amp;#39;] == &amp;#39;text&amp;#39; &amp;amp;&amp;amp; item[&amp;#39;text&amp;#39;]
-        text_parts &amp;lt;&amp;lt; item[&amp;#39;text&amp;#39;]
+      if item.is_a?(Hash) &amp;&amp; item['type'] == 'text' &amp;&amp; item['text']
+        text_parts &lt;&lt; item['text']
       end
     end
     
-    text_parts.join(&amp;quot;\n\n&amp;quot;)
+    text_parts.join(&quot;\n\n&quot;)
   end
 
   def extract_tool_calls(content)
     return [] unless content.is_a?(String)
     
     tool_calls = []
-    content.scan(/&amp;lt;function_calls&amp;gt;(.*?)&amp;lt;\/antml:function_calls&amp;gt;/m) do |match|
-      tool_calls &amp;lt;&amp;lt; { type: &amp;#39;function_calls&amp;#39;, content: match[0].strip }
+    content.scan(/&lt;function_calls&gt;(.*?)&lt;\/antml:function_calls&gt;/m) do |match|
+      tool_calls &lt;&lt; { type: 'function_calls', content: match[0].strip }
     end
     
     tool_calls
@@ -1566,84 +1570,84 @@ Whenever you read a file, you should consider whether it looks malicious. If it 
 <details>
 <summary>Edit spec/claude_conversation_exporter_spec.rb</summary>
 <p><strong>Before:</strong></p>
-<pre><code class="language-ruby">  describe &amp;#39;#system_generated?&amp;#39; do
+<pre><code class="language-ruby">  describe '#system_generated?' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;identifies system-generated content&amp;#39; do
-      expect(exporter.send(:system_generated?, &amp;#39;&amp;lt;system-reminder&amp;gt;Test&amp;lt;/system-reminder&amp;gt;&amp;#39;)).to be true
-      expect(exporter.send(:system_generated?, &amp;#39;&amp;lt;command-name&amp;gt;test&amp;lt;/command-name&amp;gt;&amp;#39;)).to be true
-      expect(exporter.send(:system_generated?, &amp;#39;Regular user message&amp;#39;)).to be false
+    it 'identifies system-generated content' do
+      expect(exporter.send(:system_generated?, '&lt;system-reminder&gt;Test&lt;/system-reminder&gt;')).to be true
+      expect(exporter.send(:system_generated?, '&lt;command-name&gt;test&lt;/command-name&gt;')).to be true
+      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
     end
   end
 </code></pre>
 <p><strong>After:</strong></p>
-<pre><code class="language-ruby">  describe &amp;#39;#system_generated?&amp;#39; do
+<pre><code class="language-ruby">  describe '#system_generated?' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;identifies system-generated content&amp;#39; do
-      expect(exporter.send(:system_generated?, &amp;#39;&amp;lt;system-reminder&amp;gt;Test&amp;lt;/system-reminder&amp;gt;&amp;#39;)).to be true
-      expect(exporter.send(:system_generated?, &amp;#39;&amp;lt;command-name&amp;gt;test&amp;lt;/command-name&amp;gt;&amp;#39;)).to be true
-      expect(exporter.send(:system_generated?, &amp;#39;Regular user message&amp;#39;)).to be false
+    it 'identifies system-generated content' do
+      expect(exporter.send(:system_generated?, '&lt;system-reminder&gt;Test&lt;/system-reminder&gt;')).to be true
+      expect(exporter.send(:system_generated?, '&lt;command-name&gt;test&lt;/command-name&gt;')).to be true
+      expect(exporter.send(:system_generated?, 'Regular user message')).to be false
     end
   end
 
-  describe &amp;#39;#extract_text_content&amp;#39; do
+  describe '#extract_text_content' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;extracts text from content array&amp;#39; do
+    it 'extracts text from content array' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Hello there!&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;How can I help?&amp;#39; }
+        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' },
+        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to eq(&amp;quot;Hello there!\n\nHow can I help?&amp;quot;)
+      expect(result).to eq(&quot;Hello there!\n\nHow can I help?&quot;)
     end
 
-    it &amp;#39;returns empty string for no text content&amp;#39; do
+    it 'returns empty string for no text content' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;image&amp;#39;, &amp;#39;data&amp;#39; =&amp;gt; &amp;#39;base64...&amp;#39; }
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' },
+        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to eq(&amp;#39;&amp;#39;)
+      expect(result).to eq('')
     end
   end
 
-  describe &amp;#39;#extract_message with text extraction&amp;#39; do
+  describe '#extract_message with text extraction' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;extracts text content from assistant array messages&amp;#39; do
+    it 'extracts text content from assistant array messages' do
       data = {
-        &amp;#39;message&amp;#39; =&amp;gt; {
-          &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;,
-          &amp;#39;content&amp;#39; =&amp;gt; [
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Here is my response.&amp;#39; },
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; }
+        'message' =&gt; {
+          'role' =&gt; 'assistant',
+          'content' =&gt; [
+            { 'type' =&gt; 'text', 'text' =&gt; 'Here is my response.' },
+            { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' }
           ]
         },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }
       
       result = exporter.send(:extract_message, data, 0)
-      expect(result[:content]).to eq(&amp;#39;Here is my response.&amp;#39;)
-      expect(result[:role]).to eq(&amp;#39;assistant&amp;#39;)
+      expect(result[:content]).to eq('Here is my response.')
+      expect(result[:role]).to eq('assistant')
     end
 
-    it &amp;#39;preserves string content for user messages&amp;#39; do
+    it 'preserves string content for user messages' do
       data = {
-        &amp;#39;message&amp;#39; =&amp;gt; {
-          &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;user&amp;#39;,
-          &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;This is my question&amp;#39;
+        'message' =&gt; {
+          'role' =&gt; 'user',
+          'content' =&gt; 'This is my question'
         },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }
       
       result = exporter.send(:extract_message, data, 0)
-      expect(result[:content]).to eq(&amp;#39;This is my question&amp;#39;)
-      expect(result[:role]).to eq(&amp;#39;user&amp;#39;)
+      expect(result[:content]).to eq('This is my question')
+      expect(result[:role]).to eq('user')
     end
   end
 </code></pre>
@@ -1827,12 +1831,12 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
     text_parts = []
     
     content_array.each do |item|
-      if item.is_a?(Hash) &amp;amp;&amp;amp; item[&amp;#39;type&amp;#39;] == &amp;#39;text&amp;#39; &amp;amp;&amp;amp; item[&amp;#39;text&amp;#39;]
-        text_parts &amp;lt;&amp;lt; item[&amp;#39;text&amp;#39;]
+      if item.is_a?(Hash) &amp;&amp; item['type'] == 'text' &amp;&amp; item['text']
+        text_parts &lt;&lt; item['text']
       end
     end
     
-    text_parts.join(&amp;quot;\n\n&amp;quot;)
+    text_parts.join(&quot;\n\n&quot;)
   end
 </code></pre>
 <p><strong>After:</strong></p>
@@ -1840,15 +1844,15 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
     parts = []
     
     content_array.each do |item|
-      if item.is_a?(Hash) &amp;amp;&amp;amp; item[&amp;#39;type&amp;#39;] == &amp;#39;text&amp;#39; &amp;amp;&amp;amp; item[&amp;#39;text&amp;#39;]
-        parts &amp;lt;&amp;lt; item[&amp;#39;text&amp;#39;]
+      if item.is_a?(Hash) &amp;&amp; item['type'] == 'text' &amp;&amp; item['text']
+        parts &lt;&lt; item['text']
       else
         # Preserve other content types as JSON for now
-        parts &amp;lt;&amp;lt; JSON.pretty_generate(item)
+        parts &lt;&lt; JSON.pretty_generate(item)
       end
     end
     
-    parts.join(&amp;quot;\n\n&amp;quot;)
+    parts.join(&quot;\n\n&quot;)
   end
 </code></pre>
 </details>
@@ -1894,53 +1898,53 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 <details>
 <summary>Edit spec/claude_conversation_exporter_spec.rb</summary>
 <p><strong>Before:</strong></p>
-<pre><code class="language-ruby">    it &amp;#39;extracts text from content array&amp;#39; do
+<pre><code class="language-ruby">    it 'extracts text from content array' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Hello there!&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;How can I help?&amp;#39; }
+        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' },
+        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to eq(&amp;quot;Hello there!\n\nHow can I help?&amp;quot;)
+      expect(result).to eq(&quot;Hello there!\n\nHow can I help?&quot;)
     end
 
-    it &amp;#39;returns empty string for no text content&amp;#39; do
+    it 'returns empty string for no text content' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;image&amp;#39;, &amp;#39;data&amp;#39; =&amp;gt; &amp;#39;base64...&amp;#39; }
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' },
+        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to eq(&amp;#39;&amp;#39;)
+      expect(result).to eq('')
     end
 </code></pre>
 <p><strong>After:</strong></p>
-<pre><code class="language-ruby">    it &amp;#39;extracts text from content array and preserves other content&amp;#39; do
+<pre><code class="language-ruby">    it 'extracts text from content array and preserves other content' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Hello there!&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;How can I help?&amp;#39; }
+        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' },
+        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;Hello there!&amp;#39;)
-      expect(result).to include(&amp;#39;How can I help?&amp;#39;)
-      expect(result).to include(&amp;#39;tool_use&amp;#39;)
-      expect(result).to include(&amp;#39;some_tool&amp;#39;)
+      expect(result).to include('Hello there!')
+      expect(result).to include('How can I help?')
+      expect(result).to include('tool_use')
+      expect(result).to include('some_tool')
     end
 
-    it &amp;#39;preserves non-text content as JSON&amp;#39; do
+    it 'preserves non-text content as JSON' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39;, &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;param&amp;#39; =&amp;gt; &amp;#39;value&amp;#39; } },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;image&amp;#39;, &amp;#39;data&amp;#39; =&amp;gt; &amp;#39;base64...&amp;#39; }
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } },
+        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;tool_use&amp;#39;)
-      expect(result).to include(&amp;#39;some_tool&amp;#39;)
-      expect(result).to include(&amp;#39;image&amp;#39;)
-      expect(result).to include(&amp;#39;base64...&amp;#39;)
+      expect(result).to include('tool_use')
+      expect(result).to include('some_tool')
+      expect(result).to include('image')
+      expect(result).to include('base64...')
     end
 </code></pre>
 </details>
@@ -1987,41 +1991,41 @@ Finished in 0.0264 seconds (files took 0.10025 seconds to load)
 <details>
 <summary>Edit spec/claude_conversation_exporter_spec.rb</summary>
 <p><strong>Before:</strong></p>
-<pre><code class="language-ruby">    it &amp;#39;extracts text content from assistant array messages&amp;#39; do
+<pre><code class="language-ruby">    it 'extracts text content from assistant array messages' do
       data = {
-        &amp;#39;message&amp;#39; =&amp;gt; {
-          &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;,
-          &amp;#39;content&amp;#39; =&amp;gt; [
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Here is my response.&amp;#39; },
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; }
+        'message' =&gt; {
+          'role' =&gt; 'assistant',
+          'content' =&gt; [
+            { 'type' =&gt; 'text', 'text' =&gt; 'Here is my response.' },
+            { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' }
           ]
         },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }
       
       result = exporter.send(:extract_message, data, 0)
-      expect(result[:content]).to eq(&amp;#39;Here is my response.&amp;#39;)
-      expect(result[:role]).to eq(&amp;#39;assistant&amp;#39;)
+      expect(result[:content]).to eq('Here is my response.')
+      expect(result[:role]).to eq('assistant')
     end
 </code></pre>
 <p><strong>After:</strong></p>
-<pre><code class="language-ruby">    it &amp;#39;extracts text content from assistant array messages and preserves other content&amp;#39; do
+<pre><code class="language-ruby">    it 'extracts text content from assistant array messages and preserves other content' do
       data = {
-        &amp;#39;message&amp;#39; =&amp;gt; {
-          &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;,
-          &amp;#39;content&amp;#39; =&amp;gt; [
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Here is my response.&amp;#39; },
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; }
+        'message' =&gt; {
+          'role' =&gt; 'assistant',
+          'content' =&gt; [
+            { 'type' =&gt; 'text', 'text' =&gt; 'Here is my response.' },
+            { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' }
           ]
         },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }
       
       result = exporter.send(:extract_message, data, 0)
-      expect(result[:content]).to include(&amp;#39;Here is my response.&amp;#39;)
-      expect(result[:content]).to include(&amp;#39;tool_use&amp;#39;)
-      expect(result[:content]).to include(&amp;#39;some_tool&amp;#39;)
-      expect(result[:role]).to eq(&amp;#39;assistant&amp;#39;)
+      expect(result[:content]).to include('Here is my response.')
+      expect(result[:content]).to include('tool_use')
+      expect(result[:content]).to include('some_tool')
+      expect(result[:role]).to eq('assistant')
     end
 </code></pre>
 </details>
@@ -2233,15 +2237,15 @@ You can add an image or a code block, too.
     parts = []
     
     content_array.each do |item|
-      if item.is_a?(Hash) &amp;amp;&amp;amp; item[&amp;#39;type&amp;#39;] == &amp;#39;text&amp;#39; &amp;amp;&amp;amp; item[&amp;#39;text&amp;#39;]
-        parts &amp;lt;&amp;lt; item[&amp;#39;text&amp;#39;]
+      if item.is_a?(Hash) &amp;&amp; item['type'] == 'text' &amp;&amp; item['text']
+        parts &lt;&lt; item['text']
       else
         # Preserve other content types as JSON for now
-        parts &amp;lt;&amp;lt; JSON.pretty_generate(item)
+        parts &lt;&lt; JSON.pretty_generate(item)
       end
     end
     
-    parts.join(&amp;quot;\n\n&amp;quot;)
+    parts.join(&quot;\n\n&quot;)
   end
 </code></pre>
 <p><strong>After:</strong></p>
@@ -2249,31 +2253,31 @@ You can add an image or a code block, too.
     parts = []
     i = 0
     
-    while i &amp;lt; content_array.length
+    while i &lt; content_array.length
       item = content_array[i]
       
-      if item.is_a?(Hash) &amp;amp;&amp;amp; item[&amp;#39;type&amp;#39;] == &amp;#39;text&amp;#39; &amp;amp;&amp;amp; item[&amp;#39;text&amp;#39;]
-        parts &amp;lt;&amp;lt; item[&amp;#39;text&amp;#39;]
-      elsif item.is_a?(Hash) &amp;amp;&amp;amp; item[&amp;#39;type&amp;#39;] == &amp;#39;tool_use&amp;#39;
+      if item.is_a?(Hash) &amp;&amp; item['type'] == 'text' &amp;&amp; item['text']
+        parts &lt;&lt; item['text']
+      elsif item.is_a?(Hash) &amp;&amp; item['type'] == 'tool_use'
         # Look for the next tool_result
         tool_result = nil
-        if i + 1 &amp;lt; content_array.length &amp;amp;&amp;amp; 
-           content_array[i + 1].is_a?(Hash) &amp;amp;&amp;amp; 
-           content_array[i + 1][&amp;#39;type&amp;#39;] == &amp;#39;tool_result&amp;#39;
+        if i + 1 &lt; content_array.length &amp;&amp; 
+           content_array[i + 1].is_a?(Hash) &amp;&amp; 
+           content_array[i + 1]['type'] == 'tool_result'
           tool_result = content_array[i + 1]
-          i += 1  # Skip the tool_result as we&amp;#39;re handling it together
+          i += 1  # Skip the tool_result as we're handling it together
         end
         
-        parts &amp;lt;&amp;lt; format_tool_use(item, tool_result)
+        parts &lt;&lt; format_tool_use(item, tool_result)
       else
         # Preserve other content types as JSON for now
-        parts &amp;lt;&amp;lt; JSON.pretty_generate(item)
+        parts &lt;&lt; JSON.pretty_generate(item)
       end
       
       i += 1
     end
     
-    parts.join(&amp;quot;\n\n&amp;quot;)
+    parts.join(&quot;\n\n&quot;)
   end
 </code></pre>
 </details>
@@ -2341,8 +2345,8 @@ You can add an image or a code block, too.
     return [] unless content.is_a?(String)
     
     tool_calls = []
-    content.scan(/&amp;lt;function_calls&amp;gt;(.*?)&amp;lt;\/antml:function_calls&amp;gt;/m) do |match|
-      tool_calls &amp;lt;&amp;lt; { type: &amp;#39;function_calls&amp;#39;, content: match[0].strip }
+    content.scan(/&lt;function_calls&gt;(.*?)&lt;\/antml:function_calls&gt;/m) do |match|
+      tool_calls &lt;&lt; { type: 'function_calls', content: match[0].strip }
     end
     
     tool_calls
@@ -2350,48 +2354,48 @@ You can add an image or a code block, too.
 </code></pre>
 <p><strong>After:</strong></p>
 <pre><code class="language-ruby">  def format_tool_use(tool_use, tool_result = nil)
-    tool_name = tool_use[&amp;#39;name&amp;#39;] || &amp;#39;Unknown Tool&amp;#39;
-    tool_input = tool_use[&amp;#39;input&amp;#39;] || {}
+    tool_name = tool_use['name'] || 'Unknown Tool'
+    tool_input = tool_use['input'] || {}
     
-    markdown = [&amp;quot;## Tool Use&amp;quot;]
+    markdown = [&quot;## Tool Use&quot;]
     
     # Main collapsed section for the tool
-    markdown &amp;lt;&amp;lt; &amp;quot;&amp;lt;details&amp;gt;&amp;quot;
-    markdown &amp;lt;&amp;lt; &amp;quot;&amp;lt;summary&amp;gt;#{tool_name}&amp;lt;/summary&amp;gt;&amp;quot;
-    markdown &amp;lt;&amp;lt; &amp;quot;&amp;quot;
-    markdown &amp;lt;&amp;lt; &amp;quot;```json&amp;quot;
-    markdown &amp;lt;&amp;lt; JSON.pretty_generate(tool_input)
-    markdown &amp;lt;&amp;lt; &amp;quot;```&amp;quot;
+    markdown &lt;&lt; &quot;&lt;details&gt;&quot;
+    markdown &lt;&lt; &quot;&lt;summary&gt;#{tool_name}&lt;/summary&gt;&quot;
+    markdown &lt;&lt; &quot;&quot;
+    markdown &lt;&lt; &quot;```json&quot;
+    markdown &lt;&lt; JSON.pretty_generate(tool_input)
+    markdown &lt;&lt; &quot;```&quot;
     
     # Tool result section if available
     if tool_result
-      markdown &amp;lt;&amp;lt; &amp;quot;&amp;quot;
-      markdown &amp;lt;&amp;lt; &amp;quot;&amp;lt;details&amp;gt;&amp;quot;
-      markdown &amp;lt;&amp;lt; &amp;quot;&amp;lt;summary&amp;gt;Tool Result&amp;lt;/summary&amp;gt;&amp;quot;
-      markdown &amp;lt;&amp;lt; &amp;quot;&amp;quot;
-      markdown &amp;lt;&amp;lt; &amp;quot;```&amp;quot;
+      markdown &lt;&lt; &quot;&quot;
+      markdown &lt;&lt; &quot;&lt;details&gt;&quot;
+      markdown &lt;&lt; &quot;&lt;summary&gt;Tool Result&lt;/summary&gt;&quot;
+      markdown &lt;&lt; &quot;&quot;
+      markdown &lt;&lt; &quot;```&quot;
       
-      result_content = if tool_result[&amp;#39;content&amp;#39;].is_a?(String)
-                        tool_result[&amp;#39;content&amp;#39;]
+      result_content = if tool_result['content'].is_a?(String)
+                        tool_result['content']
                       else
-                        JSON.pretty_generate(tool_result[&amp;#39;content&amp;#39;])
+                        JSON.pretty_generate(tool_result['content'])
                       end
       
-      markdown &amp;lt;&amp;lt; result_content
-      markdown &amp;lt;&amp;lt; &amp;quot;```&amp;quot;
-      markdown &amp;lt;&amp;lt; &amp;quot;&amp;lt;/details&amp;gt;&amp;quot;
+      markdown &lt;&lt; result_content
+      markdown &lt;&lt; &quot;```&quot;
+      markdown &lt;&lt; &quot;&lt;/details&gt;&quot;
     end
     
-    markdown &amp;lt;&amp;lt; &amp;quot;&amp;lt;/details&amp;gt;&amp;quot;
-    markdown.join(&amp;quot;\n&amp;quot;)
+    markdown &lt;&lt; &quot;&lt;/details&gt;&quot;
+    markdown.join(&quot;\n&quot;)
   end
 
   def extract_tool_calls(content)
     return [] unless content.is_a?(String)
     
     tool_calls = []
-    content.scan(/&amp;lt;function_calls&amp;gt;(.*?)&amp;lt;\/antml:function_calls&amp;gt;/m) do |match|
-      tool_calls &amp;lt;&amp;lt; { type: &amp;#39;function_calls&amp;#39;, content: match[0].strip }
+    content.scan(/&lt;function_calls&gt;(.*?)&lt;\/antml:function_calls&gt;/m) do |match|
+      tool_calls &lt;&lt; { type: 'function_calls', content: match[0].strip }
     end
     
     tool_calls
@@ -2475,116 +2479,116 @@ You can add an image or a code block, too.
 <details>
 <summary>Edit spec/claude_conversation_exporter_spec.rb</summary>
 <p><strong>Before:</strong></p>
-<pre><code class="language-ruby">  describe &amp;#39;#extract_text_content&amp;#39; do
+<pre><code class="language-ruby">  describe '#extract_text_content' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;extracts text from content array and preserves other content&amp;#39; do
+    it 'extracts text from content array and preserves other content' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Hello there!&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;How can I help?&amp;#39; }
+        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' },
+        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;Hello there!&amp;#39;)
-      expect(result).to include(&amp;#39;How can I help?&amp;#39;)
-      expect(result).to include(&amp;#39;tool_use&amp;#39;)
-      expect(result).to include(&amp;#39;some_tool&amp;#39;)
+      expect(result).to include('Hello there!')
+      expect(result).to include('How can I help?')
+      expect(result).to include('tool_use')
+      expect(result).to include('some_tool')
     end
 
-    it &amp;#39;preserves non-text content as JSON&amp;#39; do
+    it 'preserves non-text content as JSON' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39;, &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;param&amp;#39; =&amp;gt; &amp;#39;value&amp;#39; } },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;image&amp;#39;, &amp;#39;data&amp;#39; =&amp;gt; &amp;#39;base64...&amp;#39; }
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } },
+        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;tool_use&amp;#39;)
-      expect(result).to include(&amp;#39;some_tool&amp;#39;)
-      expect(result).to include(&amp;#39;image&amp;#39;)
-      expect(result).to include(&amp;#39;base64...&amp;#39;)
+      expect(result).to include('tool_use')
+      expect(result).to include('some_tool')
+      expect(result).to include('image')
+      expect(result).to include('base64...')
     end
   end
 </code></pre>
 <p><strong>After:</strong></p>
-<pre><code class="language-ruby">  describe &amp;#39;#extract_text_content&amp;#39; do
+<pre><code class="language-ruby">  describe '#extract_text_content' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;extracts text from content array and formats tool use&amp;#39; do
+    it 'extracts text from content array and formats tool use' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Hello there!&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39;, &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;param&amp;#39; =&amp;gt; &amp;#39;value&amp;#39; } },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_result&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;Tool executed successfully&amp;#39; },
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;How can I help?&amp;#39; }
+        { 'type' =&gt; 'text', 'text' =&gt; 'Hello there!' },
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } },
+        { 'type' =&gt; 'tool_result', 'content' =&gt; 'Tool executed successfully' },
+        { 'type' =&gt; 'text', 'text' =&gt; 'How can I help?' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;Hello there!&amp;#39;)
-      expect(result).to include(&amp;#39;How can I help?&amp;#39;)
-      expect(result).to include(&amp;#39;## Tool Use&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;details&amp;gt;&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;summary&amp;gt;some_tool&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;summary&amp;gt;Tool Result&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result).to include(&amp;#39;Tool executed successfully&amp;#39;)
+      expect(result).to include('Hello there!')
+      expect(result).to include('How can I help?')
+      expect(result).to include('## Tool Use')
+      expect(result).to include('&lt;details&gt;')
+      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
+      expect(result).to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
+      expect(result).to include('Tool executed successfully')
     end
 
-    it &amp;#39;handles tool_use without tool_result&amp;#39; do
+    it 'handles tool_use without tool_result' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39;, &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;param&amp;#39; =&amp;gt; &amp;#39;value&amp;#39; } }
+        { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;## Tool Use&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;summary&amp;gt;some_tool&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result).not_to include(&amp;#39;&amp;lt;summary&amp;gt;Tool Result&amp;lt;/summary&amp;gt;&amp;#39;)
+      expect(result).to include('## Tool Use')
+      expect(result).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
+      expect(result).not_to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
     end
 
-    it &amp;#39;preserves non-text, non-tool content as JSON&amp;#39; do
+    it 'preserves non-text, non-tool content as JSON' do
       content_array = [
-        { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;image&amp;#39;, &amp;#39;data&amp;#39; =&amp;gt; &amp;#39;base64...&amp;#39; }
+        { 'type' =&gt; 'image', 'data' =&gt; 'base64...' }
       ]
       
       result = exporter.send(:extract_text_content, content_array)
-      expect(result).to include(&amp;#39;image&amp;#39;)
-      expect(result).to include(&amp;#39;base64...&amp;#39;)
+      expect(result).to include('image')
+      expect(result).to include('base64...')
     end
   end
 
-  describe &amp;#39;#format_tool_use&amp;#39; do
+  describe '#format_tool_use' do
     let(:exporter) { described_class.new(project_path, output_dir) }
 
-    it &amp;#39;formats tool use with collapsed sections&amp;#39; do
+    it 'formats tool use with collapsed sections' do
       tool_use = {
-        &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;Read&amp;#39;,
-        &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;file_path&amp;#39; =&amp;gt; &amp;#39;/path/to/file.txt&amp;#39; }
+        'name' =&gt; 'Read',
+        'input' =&gt; { 'file_path' =&gt; '/path/to/file.txt' }
       }
       tool_result = {
-        &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;File contents here&amp;#39;
+        'content' =&gt; 'File contents here'
       }
       
       result = exporter.send(:format_tool_use, tool_use, tool_result)
       
-      expect(result).to include(&amp;#39;## Tool Use&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;details&amp;gt;&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;summary&amp;gt;Read&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result).to include(&amp;#39;```json&amp;#39;)
-      expect(result).to include(&amp;#39;file_path&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;summary&amp;gt;Tool Result&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result).to include(&amp;#39;File contents here&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;/details&amp;gt;&amp;#39;)
+      expect(result).to include('## Tool Use')
+      expect(result).to include('&lt;details&gt;')
+      expect(result).to include('&lt;summary&gt;Read&lt;/summary&gt;')
+      expect(result).to include('```json')
+      expect(result).to include('file_path')
+      expect(result).to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
+      expect(result).to include('File contents here')
+      expect(result).to include('&lt;/details&gt;')
     end
 
-    it &amp;#39;handles tool use without result&amp;#39; do
+    it 'handles tool use without result' do
       tool_use = {
-        &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;Write&amp;#39;,
-        &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;file_path&amp;#39; =&amp;gt; &amp;#39;/path/to/file.txt&amp;#39;, &amp;#39;content&amp;#39; =&amp;gt; &amp;#39;New content&amp;#39; }
+        'name' =&gt; 'Write',
+        'input' =&gt; { 'file_path' =&gt; '/path/to/file.txt', 'content' =&gt; 'New content' }
       }
       
       result = exporter.send(:format_tool_use, tool_use)
       
-      expect(result).to include(&amp;#39;## Tool Use&amp;#39;)
-      expect(result).to include(&amp;#39;&amp;lt;summary&amp;gt;Write&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result).not_to include(&amp;#39;&amp;lt;summary&amp;gt;Tool Result&amp;lt;/summary&amp;gt;&amp;#39;)
+      expect(result).to include('## Tool Use')
+      expect(result).to include('&lt;summary&gt;Write&lt;/summary&gt;')
+      expect(result).not_to include('&lt;summary&gt;Tool Result&lt;/summary&gt;')
     end
   end
 </code></pre>
@@ -2747,43 +2751,43 @@ rspec ./spec/claude_conversation_exporter_spec.rb:246 # ClaudeConversationExport
 <details>
 <summary>Edit spec/claude_conversation_exporter_spec.rb</summary>
 <p><strong>Before:</strong></p>
-<pre><code class="language-ruby">    it &amp;#39;extracts text content from assistant array messages and preserves other content&amp;#39; do
+<pre><code class="language-ruby">    it 'extracts text content from assistant array messages and preserves other content' do
       data = {
-        &amp;#39;message&amp;#39; =&amp;gt; {
-          &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;,
-          &amp;#39;content&amp;#39; =&amp;gt; [
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Here is my response.&amp;#39; },
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39; }
+        'message' =&gt; {
+          'role' =&gt; 'assistant',
+          'content' =&gt; [
+            { 'type' =&gt; 'text', 'text' =&gt; 'Here is my response.' },
+            { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool' }
           ]
         },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }
       
       result = exporter.send(:extract_message, data, 0)
-      expect(result[:content]).to include(&amp;#39;Here is my response.&amp;#39;)
-      expect(result[:content]).to include(&amp;#39;tool_use&amp;#39;)
-      expect(result[:content]).to include(&amp;#39;some_tool&amp;#39;)
-      expect(result[:role]).to eq(&amp;#39;assistant&amp;#39;)
+      expect(result[:content]).to include('Here is my response.')
+      expect(result[:content]).to include('tool_use')
+      expect(result[:content]).to include('some_tool')
+      expect(result[:role]).to eq('assistant')
     end
 </code></pre>
 <p><strong>After:</strong></p>
-<pre><code class="language-ruby">    it &amp;#39;extracts text content from assistant array messages and formats tool use&amp;#39; do
+<pre><code class="language-ruby">    it 'extracts text content from assistant array messages and formats tool use' do
       data = {
-        &amp;#39;message&amp;#39; =&amp;gt; {
-          &amp;#39;role&amp;#39; =&amp;gt; &amp;#39;assistant&amp;#39;,
-          &amp;#39;content&amp;#39; =&amp;gt; [
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;text&amp;#39;, &amp;#39;text&amp;#39; =&amp;gt; &amp;#39;Here is my response.&amp;#39; },
-            { &amp;#39;type&amp;#39; =&amp;gt; &amp;#39;tool_use&amp;#39;, &amp;#39;name&amp;#39; =&amp;gt; &amp;#39;some_tool&amp;#39;, &amp;#39;input&amp;#39; =&amp;gt; { &amp;#39;param&amp;#39; =&amp;gt; &amp;#39;value&amp;#39; } }
+        'message' =&gt; {
+          'role' =&gt; 'assistant',
+          'content' =&gt; [
+            { 'type' =&gt; 'text', 'text' =&gt; 'Here is my response.' },
+            { 'type' =&gt; 'tool_use', 'name' =&gt; 'some_tool', 'input' =&gt; { 'param' =&gt; 'value' } }
           ]
         },
-        &amp;#39;timestamp&amp;#39; =&amp;gt; &amp;#39;2024-01-01T10:00:00Z&amp;#39;
+        'timestamp' =&gt; '2024-01-01T10:00:00Z'
       }
       
       result = exporter.send(:extract_message, data, 0)
-      expect(result[:content]).to include(&amp;#39;Here is my response.&amp;#39;)
-      expect(result[:content]).to include(&amp;#39;## Tool Use&amp;#39;)
-      expect(result[:content]).to include(&amp;#39;&amp;lt;summary&amp;gt;some_tool&amp;lt;/summary&amp;gt;&amp;#39;)
-      expect(result[:role]).to eq(&amp;#39;assistant&amp;#39;)
+      expect(result[:content]).to include('Here is my response.')
+      expect(result[:content]).to include('## Tool Use')
+      expect(result[:content]).to include('&lt;summary&gt;some_tool&lt;/summary&gt;')
+      expect(result[:role]).to eq('assistant')
     end
 </code></pre>
 </details>

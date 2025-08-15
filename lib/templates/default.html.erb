@@ -50,16 +50,20 @@
         }
 
         /* Code blocks - integrate with Prism.js */
-        pre[class*="language-"] {
+        pre[class*="language-"], 
+        pre:not([class*="language-"]) {
             background: var(--dark-blue) !important;
             border-radius: 12px;
             overflow-x: auto;
             margin: 16px 0;
+            padding: 16px;
         }
 
-        code[class*="language-"] {
+        code[class*="language-"],
+        pre:not([class*="language-"]) > code {
             color: var(--light-blue) !important;
             text-shadow: none !important;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
         /* Inline code (no language class) */
