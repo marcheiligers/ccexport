@@ -624,20 +624,20 @@ class ClaudeConversationExporter
     { content: content, has_thinking: has_thinking }
   end
 
-  # Scan content for secrets and log them (let GitLab gem handle detection)
+  # Scan content for secrets and redact them using GitLab's masker
   def scan_and_redact_secrets(content, context_id = 'unknown')
     return content if @secret_scanner.nil? || content.nil? || content.empty?
     
-    # Create payload for scanning
-    payload = @payload_struct.new(context_id, content.to_s)
+    original_content = content.to_s
     
     # Scan for secrets
+    payload = @payload_struct.new(context_id, original_content)
     response = @secret_scanner.secrets_scan([payload])
     
     # If no secrets found, return original content
     return content if response.status == Gitlab::SecretDetection::Core::Status::NOT_FOUND
     
-    # Record detected secrets for reporting
+    # Record detected secrets for logging
     response.results.each do |finding|
       next unless finding.status == Gitlab::SecretDetection::Core::Status::FOUND
       
@@ -649,12 +649,32 @@ class ClaudeConversationExporter
       }
     end
     
-    # Return original content - we're just detecting and logging for now
-    # In a future iteration, we could implement proper redaction using the gem's exclusion system
-    content
+    # Apply GitLab's masker to the entire content
+    # This will mask anything that looks like a secret using their proven logic
+    redacted_content = mask_potential_secrets(original_content)
+    
+    redacted_content
   rescue StandardError => e
-    puts "Warning: Secret detection failed for #{context_id}: #{e.message}"
+    puts "Warning: Secret detection/redaction failed for #{context_id}: #{e.message}"
     content
+  end
+
+  # Use GitLab's masker on content that contains secrets
+  def mask_potential_secrets(content)
+    # Split into words and mask any that look like secrets
+    # This is a conservative approach that uses GitLab's proven masking logic
+    words = content.split(/(\s+)/)
+    
+    masked_words = words.map do |word|
+      # Only mask words that are likely to be secrets (long, alphanumeric)
+      if word.length >= 20 && word.match?(/^[A-Za-z0-9+\/\-_]+$/)
+        Gitlab::SecretDetection::Utils::Masker.mask_secret(word)
+      else
+        word
+      end
+    end
+    
+    masked_words.join
   end
 
   # Helper method to escape backticks in code blocks

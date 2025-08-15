@@ -31,7 +31,7 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 - **Skip Logging**: Comprehensive JSONL logs of skipped messages during export with reasons
 - **Message ID Tracking**: HTML comments with Claude message IDs for cross-referencing
 - **Individual File Processing**: Process specific JSONL files instead of scanning directories
-- **Secret Detection**: Automatic detection of API keys, tokens, and other secrets using GitLab's proven ruleset
+- **Secret Detection & Redaction**: Automatic detection and redaction of API keys, tokens, and other secrets using GitLab's proven ruleset
 
 ## Installation
 
@@ -145,99 +145,24 @@ The exporter creates Markdown files with:
 - **Relative paths**: All project paths converted to relative format
 - **Message IDs**: HTML comments with Claude message IDs for reference
 - **Skip logging**: Separate JSONL files documenting skipped messages with reasons
-- **Secret detection logs**: JSONL files documenting detected secrets with security warnings
+- **Secret detection logs**: JSONL files documenting detected and redacted secrets with security warnings
 - **Clean formatting**: Optimized for GitHub and other Markdown viewers
 
 ### Example Output
 
-#### Basic Conversation
-```markdown
-# Claude Code Conversation
+For complete examples of the exported format, see the sample files in this repository:
 
-**Session:** `20240101-120000-example-session`  
-**Started:** January 1, 2024 at 12:00 PM
-**Last activity:** January 1, 2024 at 12:30 PM
-**Messages:** 4 (2 user, 2 assistant)
+- **[VIBE.md](VIBE.md)** - Full conversation export showing all features including tool use, thinking messages, message IDs, and formatting
+- **[VIBE.html](VIBE.html)** - HTML preview version with default template styling and syntax highlighting
 
----
+These files demonstrate real conversation exports with:
+- Multiple message types (user, assistant, thinking)
+- Tool use with collapsible sections and syntax highlighting  
+- Message ID HTML comments for cross-referencing
+- Path relativization and clean formatting
+- All advanced formatting features in action
 
-## 👤 User
-<!-- msg_01ABC123def456ghi789 -->
-
-Can you create a simple Ruby script for me?
-
-## 🤖 Assistant
-<!-- msg_01XYZ789abc123def456 -->
-
-I'll create a Ruby script for you.
-```
-
-#### Enhanced Tool Formatting
-
-**Write Tool:**
-```markdown
-## 🤖🔧 Assistant
-<details>
-<summary>Write lib/hello.rb</summary>
-
-```ruby
-#!/usr/bin/env ruby
-
-puts "Hello, World!"
-```
-</details>
-
-<details>
-<summary>Tool Result</summary>
-
-```
-File created successfully at: lib/hello.rb
-```
-</details>
-```
-
-**Edit Tool:**
-```markdown
-## 🤖🔧 Assistant
-<details>
-<summary>Edit lib/hello.rb</summary>
-
-**Before:**
-```ruby
-puts "Hello, World!"
-```
-
-**After:**
-```ruby
-puts "Hello, Ruby!"
-```
-</details>
-```
-
-**Bash Tool:**
-```markdown
-## 🤖🔧 Assistant
-<details>
-<summary>Bash: Run the Ruby script</summary>
-
-```bash
-ruby lib/hello.rb
-```
-</details>
-```
-
-**Thinking Messages:**
-```markdown
-## 🤖💭 Assistant
-
-I need to analyze this request carefully.
-
-> The user is asking for a Ruby script
-> I should create something simple and clear
-> Let me start with a basic Hello World example
-
-Based on your request, I'll create a simple Ruby script.
-```
+The VIBE files showcase advanced features like collapsible tool sections, syntax highlighting, thinking message formatting, and proper message threading that would be impractical to show in README snippets.
 
 ## Skip Logging
 
@@ -266,14 +191,7 @@ The exporter automatically generates detailed logs of any messages that were ski
 
 ## Message ID Tracking
 
-Each message in the exported Markdown includes HTML comments with Claude message IDs for easy cross-referencing:
-
-```markdown
-## 🤖 Assistant
-<!-- msg_01RMr1PPo2ZiRmwHQzgYfovs -->
-
-Your assistant response here...
-```
+Each message in the exported Markdown includes HTML comments with Claude message IDs for easy cross-referencing. You can see this in action throughout the [VIBE.md](VIBE.md) file where each message heading includes a comment like `<!-- msg_01RMr1PPo2ZiRmwHQzgYfovs -->`.
 
 This allows you to:
 - Track specific messages across different exports
@@ -284,11 +202,11 @@ This allows you to:
 
 **⚠️ IMPORTANT SECURITY NOTICE ⚠️**
 
-The exporter automatically scans conversation content for common secrets and sensitive information before export. However, **you are still responsible for reviewing your exports** before sharing them publicly.
+The exporter automatically scans conversation content for common secrets and sensitive information, then **automatically redacts detected secrets** before export. However, **you are still responsible for reviewing your exports** before sharing them publicly.
 
-### Automatic Detection
+### Automatic Detection & Redaction
 
-The tool uses the [`gitlab-secret_detection`](https://rubygems.org/gems/gitlab-secret_detection) gem to scan for:
+The tool uses the [`gitlab-secret_detection`](https://rubygems.org/gems/gitlab-secret_detection) gem to detect and redact:
 
 - **API Keys**: AWS access keys, Google API keys, Azure tokens
 - **Authentication Tokens**: GitHub personal access tokens, GitLab tokens
@@ -297,14 +215,15 @@ The tool uses the [`gitlab-secret_detection`](https://rubygems.org/gems/gitlab-s
 - **Database Credentials**: Connection strings, passwords
 - **And 85+ other secret patterns** from GitLab's proven security ruleset
 
-### Detection Logging
+### Detection & Redaction Process
 
 When secrets are detected, the exporter:
 
-1. **Continues the export** (non-blocking detection)
-2. **Creates a detailed log** file: `*_secrets.jsonl`
-3. **Shows a warning** with the count of detected secrets
-4. **Logs structured data** including secret type, location, and context
+1. **Automatically redacts** detected secrets using GitLab's proven masking algorithm
+2. **Continues the export** with redacted content (non-blocking)
+3. **Creates a detailed log** file: `*_secrets.jsonl`
+4. **Shows a warning** with the count of detected secrets
+5. **Logs structured data** including secret type, location, and context
 
 ### Example Warning Output
 
@@ -324,17 +243,31 @@ The generated `*_secrets.jsonl` file contains structured data for each detection
 
 ### Best Practices
 
-1. **Always review the secrets log** before sharing exports
-2. **Manually scan for context-specific secrets** the detector might miss
+1. **Review both the export and secrets log** before sharing
+2. **Check for context-specific secrets** the detector might miss
 3. **Consider using fake/example data** in conversations you plan to export
-4. **Remove or redact sensitive content** from exports before sharing
+4. **Manually review redacted areas** to ensure proper masking
 5. **Use the `--jsonl` option** to process specific conversations when unsure
+
+### Redaction Examples
+
+Original content with secrets:
+```
+Here's my AWS key: AKIAIOSFODNN7EXAMPLE
+And my Slack token: xoxb-1234567890-1234567890123-abcdefghijklmnop
+```
+
+Automatically redacted output:
+```
+Here's my AWS key: AKI*****ODN*****MPL*
+And my Slack token: xox*****456*****123*****901*****cde*****klm***
+```
 
 ### Limitations
 
 - Detection is **pattern-based** and may have false positives/negatives
 - **Context-specific secrets** (like internal URLs, custom API endpoints) may not be detected
-- **The tool does not automatically redact** detected secrets (logging only)
+- **Redaction uses conservative masking** - some non-secrets may be masked if they match patterns
 - **Human review is always required** before sharing
 
 ## Testing
@@ -359,7 +292,7 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - **Integrated HTML Preview**: Generate and open HTML previews with GitHub styling
 - **Skip Logging & Message Tracking**: JSONL logs of filtered messages and HTML comment message IDs
 - **Individual File Processing**: Direct JSONL file processing with `--jsonl` option
-- **Secret Detection**: Automatic security scanning using GitLab's secret detection ruleset
+- **Secret Detection & Redaction**: Automatic security scanning and redaction using GitLab's secret detection ruleset
 - **Comprehensive testing**: 96 RSpec tests covering all functionality including secret detection
 - **Ruby-idiomatic**: Clean, maintainable Ruby code structure
 

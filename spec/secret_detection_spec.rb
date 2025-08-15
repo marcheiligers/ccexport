@@ -50,6 +50,12 @@ RSpec.describe 'Secret Detection Integration' do
       md_files = Dir.glob(File.join(output_dir, '*.md'))
       expect(md_files.length).to eq(1)
       
+      # Verify that the exported markdown has redacted content
+      md_content = File.read(md_files.first)
+      expect(md_content).to include('*****')  # Should contain masked secrets
+      expect(md_content).not_to include('AKIAIOSFODNN7EXAMPLE')  # Should not contain original AWS key
+      expect(md_content).not_to include('xoxb-1234567890-1234567890123-abcdefghijklmnop')  # Should not contain original Slack token
+      
       # Check for secrets log file
       secrets_log_files = Dir.glob(File.join(output_dir, '*_secrets.jsonl'))
       expect(secrets_log_files.length).to eq(1)
@@ -111,13 +117,16 @@ RSpec.describe 'Secret Detection Integration' do
   end
 
   describe 'secret detection methods' do
-    it 'should detect secrets in text content' do
+    it 'should detect and redact secrets in text content' do
       test_content = 'AWS key: AKIAIOSFODNN7EXAMPLE'
       
       result = exporter.send(:scan_and_redact_secrets, test_content, 'test')
       
-      # Content should be unchanged (we're just detecting, not redacting)
-      expect(result).to eq(test_content)
+      # Content should be redacted (secrets masked)
+      expect(result).not_to eq(test_content)
+      expect(result).to include('AWS key:')
+      expect(result).to include('*****')  # Should contain masked content
+      expect(result).not_to include('AKIAIOSFODNN7EXAMPLE')  # Should not contain original secret
       
       # Should have detected the secret
       secrets_detected = exporter.instance_variable_get(:@secrets_detected)
