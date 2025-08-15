@@ -49,6 +49,10 @@ OptionParser.new do |parser|
     options[:jsonl] = file
   end
   
+  parser.on("-s", "--silent", "Silent mode - suppress all output") do
+    options[:silent] = true
+  end
+  
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit
@@ -58,17 +62,17 @@ end.parse!
 begin
   # Validate options
   if options[:no_open] && !options[:preview]
-    puts "Error: --no-open requires --preview"
+    puts "Error: --no-open requires --preview" unless options[:silent]
     exit 1
   end
   
   if options[:jsonl] && !File.exist?(options[:jsonl])
-    puts "Error: JSONL file not found: #{options[:jsonl]}"
+    puts "Error: JSONL file not found: #{options[:jsonl]}" unless options[:silent]
     exit 1
   end
   
   if options[:jsonl] && !options[:jsonl].end_with?('.jsonl')
-    puts "Error: File must have .jsonl extension: #{options[:jsonl]}"
+    puts "Error: File must have .jsonl extension: #{options[:jsonl]}" unless options[:silent]
     exit 1
   end
   
@@ -81,11 +85,11 @@ begin
     # Use the actual output file if it was specified, otherwise use the directory
     preview_target = result[:output_file] || output_dir
     template_name = options[:template] || 'default'
-    ClaudeConversationExporter.generate_preview(preview_target, !options[:no_open], result[:leaf_summaries] || [], template_name)
+    ClaudeConversationExporter.generate_preview(preview_target, !options[:no_open], result[:leaf_summaries] || [], template_name, options[:silent])
   end
   
   exit 0
 rescue StandardError => e
-  puts "Error: #{e.message}"
+  puts "Error: #{e.message}" unless options[:silent]
   exit 1
 end

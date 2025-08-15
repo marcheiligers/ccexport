@@ -22,7 +22,7 @@ RSpec.describe ClaudeConversationExporter do
 
   describe '#initialize' do
     it 'finds Claude home directory' do
-      exporter = described_class.new(project_path, output_dir)
+      exporter = create_silent_exporter(project_path, output_dir)
       expect(exporter.instance_variable_get(:@claude_home)).to eq(claude_home)
     end
 
@@ -33,18 +33,18 @@ RSpec.describe ClaudeConversationExporter do
 
     it 'accepts date filtering options' do
       options = { from: '2024-01-01', to: '2024-01-02' }
-      exporter = described_class.new(project_path, output_dir, options)
-      expect(exporter.instance_variable_get(:@options)).to eq(options)
+      exporter = described_class.new(project_path, output_dir, options.merge(silent: true))
+      expect(exporter.instance_variable_get(:@options)).to eq(options.merge(silent: true))
     end
 
     it 'sets up today filter correctly' do
       options = { today: true }
       allow(Time).to receive(:now).and_return(Time.new(2024, 1, 15, 12, 0, 0, '+00:00'))
-      
-      exporter = described_class.new(project_path, output_dir, options)
+
+      exporter = described_class.new(project_path, output_dir, options.merge(silent: true))
       from_time = exporter.instance_variable_get(:@from_time)
       to_time = exporter.instance_variable_get(:@to_time)
-      
+
       expect(from_time.strftime('%Y-%m-%d %H:%M:%S')).to eq('2024-01-15 00:00:00')
       expect(to_time.strftime('%Y-%m-%d %H:%M:%S')).to eq('2024-01-15 23:59:59')
     end
@@ -71,8 +71,8 @@ RSpec.describe ClaudeConversationExporter do
     end
 
     it 'exports conversations to markdown' do
-      result = described_class.new(project_path, output_dir).export
-      
+      result = create_silent_exporter(project_path, output_dir).export
+
       expect(result[:sessions_exported]).to eq(1)
       expect(result[:total_messages]).to eq(2)
       expect(Dir.glob(File.join(output_dir, '*.md')).length).to eq(1)
@@ -87,19 +87,19 @@ RSpec.describe ClaudeConversationExporter do
           'timestamp' => '2024-01-02T10:00:00Z'
         }
       ].map(&:to_json).join("\n")
-      
+
       File.write(second_session_file, second_jsonl_content)
-      
-      result = described_class.new(project_path, output_dir).export
-      
+
+      result = create_silent_exporter(project_path, output_dir).export
+
       expect(result[:sessions_exported]).to eq(2)
       expect(result[:total_messages]).to eq(3)
       expect(Dir.glob(File.join(output_dir, '*.md')).length).to eq(1)
-      
+
       # Check combined content
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       expect(content).to include('# Claude Code Conversation')
       expect(content).to include('**Sessions:** 2')
       expect(content).to include('# Session 2')
@@ -111,7 +111,7 @@ RSpec.describe ClaudeConversationExporter do
       # Create sessions with out-of-order timestamps
       earlier_session_file = File.join(session_dir, 'earlier.jsonl')
       later_session_file = File.join(session_dir, 'later.jsonl')
-      
+
       # Later session (written first)
       later_content = [
         {
@@ -119,7 +119,7 @@ RSpec.describe ClaudeConversationExporter do
           'timestamp' => '2024-01-03T10:00:00Z'
         }
       ].map(&:to_json).join("\n")
-      
+
       # Earlier session (written second)
       earlier_content = [
         {
@@ -127,29 +127,29 @@ RSpec.describe ClaudeConversationExporter do
           'timestamp' => '2024-01-01T10:00:00Z'
         }
       ].map(&:to_json).join("\n")
-      
+
       File.write(later_session_file, later_content)
       File.write(earlier_session_file, earlier_content)
-      
-      result = described_class.new(project_path, output_dir).export
-      
+
+      result = create_silent_exporter(project_path, output_dir).export
+
       # Check that sessions are in chronological order in the output
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       # Earlier message should appear before later message
       earlier_pos = content.index('Earlier session message')
       later_pos = content.index('Later session message')
-      
+
       expect(earlier_pos).to be < later_pos
     end
 
     it 'creates properly formatted markdown' do
-      described_class.new(project_path, output_dir).export
-      
+      create_silent_exporter(project_path, output_dir).export
+
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       expect(content).to include('# Claude Code Conversation')
       expect(content).to include('## 👤 User')
       expect(content).to include('## 🤖 Assistant')
@@ -158,17 +158,17 @@ RSpec.describe ClaudeConversationExporter do
     end
 
     it 'formats session metadata with proper line breaks' do
-      described_class.new(project_path, output_dir).export
-      
+      create_silent_exporter(project_path, output_dir).export
+
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       # Check that session metadata appears on separate lines
       lines = content.split("\n")
       session_line = lines.find { |line| line.include?('**Session:**') }
       started_line = lines.find { |line| line.include?('**Started:**') }
       messages_line = lines.find { |line| line.include?('**Messages:**') }
-      
+
       expect(session_line).to match(/^\*\*Session:\*\* `test-session`$/)
       expect(started_line).to match(/^\*\*Started:\*\* /)
       expect(messages_line).to match(/^\*\*Messages:\*\* \d+ \(\d+ user, \d+ assistant\)$/)
@@ -182,18 +182,18 @@ RSpec.describe ClaudeConversationExporter do
           'timestamp' => '2024-01-15T15:30:00Z'  # 3:30 PM UTC
         }
       ].map(&:to_json).join("\n")
-      
+
       File.write(session_file, utc_content)
-      
-      described_class.new(project_path, output_dir).export
-      
+
+      create_silent_exporter(project_path, output_dir).export
+
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       # Should contain local time conversion (will vary by timezone)
       started_line = content.lines.find { |line| line.include?('**Started:**') }
       expect(started_line).to match(/\*\*Started:\*\* January 15, 2024 at \d{1,2}:\d{2} (AM|PM)/)
-      
+
       # The exact time will depend on system timezone, but format should be correct
       expect(started_line).not_to include('15:30')  # Should not show UTC format
     end
@@ -201,12 +201,12 @@ RSpec.describe ClaudeConversationExporter do
     it 'handles custom output directory from options' do
       custom_output = File.join(temp_dir, 'custom_output')
       options = { out: custom_output }
-      
+
       # Mock the class method to pass options through
       allow(described_class).to receive(:new).and_call_original
-      
-      result = described_class.new(project_path, custom_output, options).export
-      
+
+      result = described_class.new(project_path, custom_output, options.merge(silent: true)).export
+
       expect(result[:sessions_exported]).to eq(1)
       expect(Dir.glob(File.join(custom_output, '*.md')).length).to eq(1)
       expect(Dir.exist?(custom_output)).to be true
@@ -214,23 +214,23 @@ RSpec.describe ClaudeConversationExporter do
 
     it 'shows timestamps when timestamps option is enabled' do
       options = { timestamps: true }
-      
-      result = described_class.new(project_path, output_dir, options).export
-      
+
+      result = described_class.new(project_path, output_dir, options.merge(silent: true)).export
+
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       # Should include timestamps in message headers
       expect(content).to match(/## 👤 User - \w+ \d{1,2}, \d{4} at \d{1,2}:\d{2}:\d{2} (AM|PM)/)
       expect(content).to match(/## 🤖 Assistant - \w+ \d{1,2}, \d{4} at \d{1,2}:\d{2}:\d{2} (AM|PM)/)
     end
 
     it 'does not show timestamps by default' do
-      result = described_class.new(project_path, output_dir).export
-      
+      result = create_silent_exporter(project_path, output_dir).export
+
       markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
       content = File.read(markdown_file)
-      
+
       # Should not include timestamps in message headers
       expect(content).to match(/^## 👤 User$/)
       expect(content).to match(/^## 🤖 Assistant$/)
@@ -239,9 +239,9 @@ RSpec.describe ClaudeConversationExporter do
 
     it 'handles empty session files gracefully' do
       File.write(session_file, '')
-      
-      result = described_class.new(project_path, output_dir).export
-      
+
+      result = create_silent_exporter(project_path, output_dir).export
+
       expect(result[:sessions_exported]).to eq(0)
       expect(result[:total_messages]).to eq(0)
     end
@@ -261,24 +261,24 @@ RSpec.describe ClaudeConversationExporter do
           'timestamp' => '2024-01-01T10:00:30Z'
         }
       ].map(&:to_json).join("\n")
-      
+
       File.write(session_file, system_content)
-      
-      result = described_class.new(project_path, output_dir).export
-      
+
+      result = create_silent_exporter(project_path, output_dir).export
+
       expect(result[:total_messages]).to eq(2) # Only user and assistant messages
     end
   end
 
   describe '#encode_path' do
     it 'encodes paths correctly' do
-      exporter = described_class.new(project_path, output_dir)
+      exporter = create_silent_exporter(project_path, output_dir)
       encoded = exporter.send(:encode_path, '/Users/test/my_project')
       expect(encoded).to eq('-Users-test-my-project')
     end
 
     it 'handles underscores' do
-      exporter = described_class.new(project_path, output_dir)
+      exporter = create_silent_exporter(project_path, output_dir)
       encoded = exporter.send(:encode_path, '/Users/test/my_project_name')
       expect(encoded).to eq('-Users-test-my-project-name')
     end
@@ -286,41 +286,41 @@ RSpec.describe ClaudeConversationExporter do
 
   describe '#generate_title' do
     it 'generates title from first user message' do
-      exporter = described_class.new(project_path, output_dir)
+      exporter = create_silent_exporter(project_path, output_dir)
       messages = [
         { role: 'user', content: 'Help me build a todo app' },
         { role: 'assistant', content: 'Sure!' }
       ]
-      
+
       title = exporter.send(:generate_title, messages)
       expect(title).to eq('help-me-build-a-todo')
     end
 
     it 'sanitizes titles properly' do
-      exporter = described_class.new(project_path, output_dir)
+      exporter = create_silent_exporter(project_path, output_dir)
       messages = [
         { role: 'user', content: 'Fix bug in /api/users endpoint!' }
       ]
-      
+
       title = exporter.send(:generate_title, messages)
       expect(title).to eq('fix-bug-in-api-users')
     end
 
     it 'returns untitled for empty messages' do
-      exporter = described_class.new(project_path, output_dir)
+      exporter = create_silent_exporter(project_path, output_dir)
       title = exporter.send(:generate_title, [])
       expect(title).to eq('untitled')
     end
   end
 
   describe '#generate_combined_filename' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     it 'generates single session filename when only one session' do
       sessions = [
         { session_id: 'test-123', messages: [{ role: 'user', content: 'Test message' }] }
       ]
-      
+
       filename = exporter.send(:generate_combined_filename, sessions)
       expect(filename).to match(/\d{8}-\d{6}-test-message-test-123\.md/)
     end
@@ -330,14 +330,14 @@ RSpec.describe ClaudeConversationExporter do
         { session_id: 'session1', messages: [{ role: 'user', content: 'First message' }] },
         { session_id: 'session2', messages: [{ role: 'user', content: 'Second message' }] }
       ]
-      
+
       filename = exporter.send(:generate_combined_filename, sessions)
       expect(filename).to match(/\d{8}-\d{6}-first-message-combined-2-sessions\.md/)
     end
   end
 
   describe '#system_generated?' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     it 'identifies system-generated content' do
       expect(exporter.send(:system_generated?, '<system-reminder>Test</system-reminder>')).to be true
@@ -347,7 +347,7 @@ RSpec.describe ClaudeConversationExporter do
   end
 
   describe '#extract_text_content' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     it 'extracts text from content array and formats tool use' do
       content_array = [
@@ -356,7 +356,7 @@ RSpec.describe ClaudeConversationExporter do
         { 'type' => 'tool_result', 'content' => 'Tool executed successfully' },
         { 'type' => 'text', 'text' => 'How can I help?' }
       ]
-      
+
       result = exporter.send(:extract_text_content, content_array)
       expect(result[:content]).to include('Hello there!')
       expect(result[:content]).to include('How can I help?')
@@ -372,7 +372,7 @@ RSpec.describe ClaudeConversationExporter do
       content_array = [
         { 'type' => 'tool_use', 'name' => 'some_tool', 'input' => { 'param' => 'value' } }
       ]
-      
+
       result = exporter.send(:extract_text_content, content_array)
       expect(result[:content]).to include('## 🤖🔧 Assistant')
       expect(result[:content]).to include('<summary>some_tool</summary>')
@@ -384,7 +384,7 @@ RSpec.describe ClaudeConversationExporter do
       content_array = [
         { 'type' => 'image', 'data' => 'base64...' }
       ]
-      
+
       result = exporter.send(:extract_text_content, content_array)
       expect(result[:content]).to include('image')
       expect(result[:content]).to include('base64...')
@@ -393,7 +393,7 @@ RSpec.describe ClaudeConversationExporter do
   end
 
   describe '#format_tool_use' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     it 'formats tool use with collapsed sections' do
       tool_use = {
@@ -403,9 +403,9 @@ RSpec.describe ClaudeConversationExporter do
       tool_result = {
         'content' => 'File contents here'
       }
-      
+
       result = exporter.send(:format_tool_use, tool_use, tool_result)
-      
+
       expect(result).to include('## 🤖🔧 Assistant')
       expect(result).to include('<details>')
       expect(result).to include('<summary>Read</summary>')
@@ -421,9 +421,9 @@ RSpec.describe ClaudeConversationExporter do
         'name' => 'Write',
         'input' => { 'file_path' => '/path/to/file.txt', 'content' => 'New content' }
       }
-      
+
       result = exporter.send(:format_tool_use, tool_use)
-      
+
       expect(result).to include('## 🤖🔧 Assistant')
       expect(result).to include('<summary>Write path/to/file.txt</summary>')
       expect(result).not_to include('<summary>Tool Result</summary>')
@@ -440,9 +440,9 @@ RSpec.describe ClaudeConversationExporter do
           ]
         }
       }
-      
+
       result = exporter.send(:format_tool_use, tool_use)
-      
+
       expect(result).to include('## 🤖🔧 Assistant')
       expect(result).to include('<summary>TodoWrite</summary>')
       expect(result).to include('✅ First task')
@@ -453,7 +453,7 @@ RSpec.describe ClaudeConversationExporter do
   end
 
   describe '#format_todo_list' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     it 'formats todos with appropriate status emojis' do
       todos = [
@@ -462,9 +462,9 @@ RSpec.describe ClaudeConversationExporter do
         { 'content' => 'Pending task', 'status' => 'pending' },
         { 'content' => 'Unknown status task', 'status' => 'unknown' }
       ]
-      
+
       result = exporter.send(:format_todo_list, todos)
-      
+
       expect(result).to include('✅ Completed task')
       expect(result).to include('🔄 In progress task')
       expect(result).to include('⏳ Pending task')
@@ -476,15 +476,15 @@ RSpec.describe ClaudeConversationExporter do
         { 'content' => 'First task', 'status' => 'completed' },
         { 'content' => 'Second task', 'status' => 'pending' }
       ]
-      
+
       result = exporter.send(:format_todo_list, todos)
-      
+
       expect(result).to eq("✅ First task  \n⏳ Second task  ")
     end
   end
 
   describe '#test_process_message with text extraction' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     it 'extracts text content from assistant array messages and formats tool use' do
       data = {
@@ -497,7 +497,7 @@ RSpec.describe ClaudeConversationExporter do
         },
         'timestamp' => '2024-01-01T10:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result[:content]).to include('Here is my response.')
       expect(result[:content]).to include('## 🤖🔧 Assistant')
@@ -513,7 +513,7 @@ RSpec.describe ClaudeConversationExporter do
         },
         'timestamp' => '2024-01-01T10:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result[:content]).to eq('This is my question')
       expect(result[:role]).to eq('user')
@@ -528,6 +528,7 @@ RSpec.describe ClaudeConversationExporter do
         'timestamp' => '2024-01-01T10:00:00Z'
       }.to_json
     end
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     before do
       File.write(session_file, jsonl_content)
@@ -536,28 +537,28 @@ RSpec.describe ClaudeConversationExporter do
 
     it 'provides class method for easy export' do
       allow(Dir).to receive(:pwd).and_return(project_path)
-      result = described_class.export
-      
+      result = exporter.export
+
       expect(result[:sessions_exported]).to be >= 0
       expect(result).to have_key(:total_messages)
     end
   end
 
   describe '#format_tool_use - enhanced formatting' do
-    let(:exporter) { described_class.new('/test/project') }
+    let(:exporter) { create_silent_exporter('/test/project') }
 
     describe 'Write tool with relative path and syntax highlighting' do
       it 'formats Write tool with relative path in summary' do
         tool_use = {
           'name' => 'Write',
-          'input' => { 
-            'file_path' => '/test/project/lib/example.rb', 
-            'content' => 'puts "hello"' 
+          'input' => {
+            'file_path' => '/test/project/lib/example.rb',
+            'content' => 'puts "hello"'
           }
         }
-        
+
         result = exporter.send(:format_tool_use, tool_use)
-        
+
         expect(result).to include('<summary>Write lib/example.rb</summary>')
         expect(result).to include('```ruby')
         expect(result).to include('puts &quot;hello&quot;')
@@ -577,12 +578,12 @@ RSpec.describe ClaudeConversationExporter do
         test_cases.each do |test_case|
           tool_use = {
             'name' => 'Write',
-            'input' => { 
-              'file_path' => "/test/project/file#{test_case[:ext]}", 
-              'content' => 'content' 
+            'input' => {
+              'file_path' => "/test/project/file#{test_case[:ext]}",
+              'content' => 'content'
             }
           }
-          
+
           result = exporter.send(:format_tool_use, tool_use)
           expect(result).to include("```#{test_case[:lang]}")
         end
@@ -593,14 +594,14 @@ RSpec.describe ClaudeConversationExporter do
       it 'formats Bash tool with description in summary' do
         tool_use = {
           'name' => 'Bash',
-          'input' => { 
-            'command' => './bin/test', 
-            'description' => 'Run test script' 
+          'input' => {
+            'command' => './bin/test',
+            'description' => 'Run test script'
           }
         }
-        
+
         result = exporter.send(:format_tool_use, tool_use)
-        
+
         expect(result).to include('<summary>Bash: Run test script</summary>')
         expect(result).to include('```bash')
         expect(result).to include('./bin/test')
@@ -611,23 +612,23 @@ RSpec.describe ClaudeConversationExporter do
           'name' => 'Bash',
           'input' => { 'command' => 'ls' }
         }
-        
+
         result = exporter.send(:format_tool_use, tool_use)
-        
+
         expect(result).to include('<summary>Bash: Run bash command</summary>')
       end
 
       it 'makes paths relative in command' do
         tool_use = {
           'name' => 'Bash',
-          'input' => { 
+          'input' => {
             'command' => '/test/project/bin/script && /test/project/lib/test.rb',
-            'description' => 'Test with paths' 
+            'description' => 'Test with paths'
           }
         }
-        
+
         result = exporter.send(:format_tool_use, tool_use)
-        
+
         expect(result).to include('./bin/script &amp;&amp; ./lib/test.rb')
       end
     end
@@ -636,15 +637,15 @@ RSpec.describe ClaudeConversationExporter do
       it 'formats Edit tool with relative path and Before/After sections' do
         tool_use = {
           'name' => 'Edit',
-          'input' => { 
+          'input' => {
             'file_path' => '/test/project/src/code.rb',
             'old_string' => 'def old_method\n  puts "old"\nend',
             'new_string' => 'def new_method\n  puts "new"\nend'
           }
         }
-        
+
         result = exporter.send(:format_tool_use, tool_use)
-        
+
         expect(result).to include('<summary>Edit src/code.rb</summary>')
         expect(result).to include('**Before:**')
         expect(result).to include('**After:**')
@@ -656,14 +657,14 @@ RSpec.describe ClaudeConversationExporter do
       it 'falls back to JSON when old_string/new_string missing' do
         tool_use = {
           'name' => 'Edit',
-          'input' => { 
+          'input' => {
             'file_path' => '/test/project/file.txt',
             'some_param' => 'value'
           }
         }
-        
+
         result = exporter.send(:format_tool_use, tool_use)
-        
+
         expect(result).to include('```json')
         expect(result).to include('"some_param"')
       end
@@ -671,55 +672,55 @@ RSpec.describe ClaudeConversationExporter do
   end
 
   describe '#make_paths_relative' do
-    let(:exporter) { described_class.new('/test/project') }
+    let(:exporter) { create_silent_exporter('/test/project') }
 
     it 'replaces absolute project paths with relative paths' do
       content = 'File at /test/project/lib/file.rb and /test/project/spec/test.rb'
-      
+
       result = exporter.send(:make_paths_relative, content)
-      
+
       expect(result).to eq('File at lib/file.rb and spec/test.rb')
     end
 
     it 'replaces project root path with current directory' do
       content = 'In directory /test/project run command'
-      
+
       result = exporter.send(:make_paths_relative, content)
-      
+
       expect(result).to eq('In directory . run command')
     end
 
     it 'leaves non-project paths unchanged' do
       content = 'System path /usr/bin/ruby and home ~/.bashrc'
-      
+
       result = exporter.send(:make_paths_relative, content)
-      
+
       expect(result).to eq('System path /usr/bin/ruby and home ~/.bashrc')
     end
   end
 
   describe 'system_generated? enhancement' do
-    let(:exporter) { described_class.new }
+    let(:exporter) { create_silent_exporter }
 
     it 'does not filter out tool use content' do
       tool_content = '## 🤖🔧 Assistant\n<details>\n<summary>Write</summary>'
-      
+
       result = exporter.send(:system_generated?, tool_content)
-      
+
       expect(result).to be false
     end
 
     it 'still filters system patterns in non-tool content' do
       system_content = 'Some text with Caveat: The messages below were generated'
-      
+
       result = exporter.send(:system_generated?, system_content)
-      
+
       expect(result).to be true
     end
   end
 
   describe 'tool_use_ids extraction and filtering' do
-    let(:exporter) { described_class.new }
+    let(:exporter) { create_silent_exporter }
 
     it 'preserves messages with tool_use even when content is empty after processing' do
       data = {
@@ -731,9 +732,9 @@ RSpec.describe ClaudeConversationExporter do
         },
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
-      
+
       expect(result).not_to be_nil
       expect(result[:tool_use_ids]).to eq(['tool123'])
       expect(result[:role]).to eq('assistant')
@@ -751,26 +752,26 @@ RSpec.describe ClaudeConversationExporter do
         },
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
-      
+
       expect(result[:tool_use_ids]).to eq(['tool123', 'tool456'])
     end
   end
 
   describe 'linear processing approach' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
-    
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
+
     it 'skips ignorable message types' do
       data = {
         'isApiErrorMessage' => false,
         'message' => { 'role' => 'assistant', 'content' => 'Some content' }
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result).to be_nil
     end
-    
+
     it 'processes isCompactSummary messages' do
       data = {
         'isCompactSummary' => true,
@@ -780,14 +781,14 @@ RSpec.describe ClaudeConversationExporter do
         },
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result).not_to be_nil
       expect(result[:role]).to eq('user')
       expect(result[:content]).to include('<details>')
       expect(result[:content]).to include('Compacted')
     end
-    
+
     it 'identifies tool_use messages correctly' do
       data = {
         'requestId' => 'req_123',
@@ -798,45 +799,45 @@ RSpec.describe ClaudeConversationExporter do
           ]
         }
       }
-      
+
       expect(exporter.send(:tool_use_message?, data)).to be true
     end
-    
+
     it 'identifies regular messages correctly' do
       data = {
         'message' => { 'role' => 'user', 'content' => 'Regular message' },
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       expect(exporter.send(:regular_message?, data)).to be true
     end
-    
+
     it 'processes thinking messages correctly' do
       data = {
         'type' => 'thinking',
         'thinking' => 'I need to analyze this problem carefully.',
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result).not_to be_nil
       expect(result[:role]).to eq('assistant_thinking')
       expect(result[:content]).to eq('> I need to analyze this problem carefully.')
     end
-    
+
     it 'handles multiline thinking content with blockquotes' do
       data = {
         'type' => 'thinking',
         'thinking' => "First line of thinking.\nSecond line of analysis.\nThird line conclusion.",
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result).not_to be_nil
       expect(result[:role]).to eq('assistant_thinking')
       expect(result[:content]).to eq("> First line of thinking.\n> Second line of analysis.\n> Third line conclusion.")
     end
-    
+
     it 'processes messages with mixed text and thinking content' do
       data = {
         'message' => {
@@ -849,7 +850,7 @@ RSpec.describe ClaudeConversationExporter do
         },
         'timestamp' => '2025-01-01T00:00:00Z'
       }
-      
+
       result = exporter.send(:test_process_message, data, 0)
       expect(result).not_to be_nil
       expect(result[:role]).to eq('assistant_thinking')
@@ -860,7 +861,7 @@ RSpec.describe ClaudeConversationExporter do
   end
 
   describe 'date filtering' do
-    let(:exporter) { described_class.new(project_path, output_dir) }
+    let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
     describe '#message_in_date_range?' do
       it 'returns true when no date filters are set' do
@@ -869,24 +870,24 @@ RSpec.describe ClaudeConversationExporter do
 
       it 'filters messages by from date' do
         options = { from: '2024-01-15' }
-        filtered_exporter = described_class.new(project_path, output_dir, options)
-        
+        filtered_exporter = described_class.new(project_path, output_dir, options.merge(silent: true))
+
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-10T10:00:00Z')).to be false
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-16T10:00:00Z')).to be true
       end
 
       it 'filters messages by to date' do
         options = { to: '2024-01-15' }
-        filtered_exporter = described_class.new(project_path, output_dir, options)
-        
+        filtered_exporter = described_class.new(project_path, output_dir, options.merge(silent: true))
+
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-14T10:00:00Z')).to be true
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-16T10:00:00Z')).to be false
       end
 
       it 'filters messages by date range' do
         options = { from: '2024-01-10', to: '2024-01-15' }
-        filtered_exporter = described_class.new(project_path, output_dir, options)
-        
+        filtered_exporter = described_class.new(project_path, output_dir, options.merge(silent: true))
+
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-05T10:00:00Z')).to be false
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-12T10:00:00Z')).to be true
         expect(filtered_exporter.send(:message_in_date_range?, '2024-01-20T10:00:00Z')).to be false
@@ -898,7 +899,7 @@ RSpec.describe ClaudeConversationExporter do
     end
 
     describe '#parse_date_input' do
-      let(:exporter) { described_class.new(project_path, output_dir) }
+      let(:exporter) { create_silent_exporter(project_path, output_dir) }
 
       it 'parses YYYY-MM-DD format for start of day' do
         result = exporter.send(:parse_date_input, '2024-01-15', 'from', start_of_day: true)
@@ -916,8 +917,8 @@ RSpec.describe ClaudeConversationExporter do
       end
 
       it 'raises error for invalid date format' do
-        expect { 
-          exporter.send(:parse_date_input, 'invalid-date', 'from', start_of_day: true) 
+        expect {
+          exporter.send(:parse_date_input, 'invalid-date', 'from', start_of_day: true)
         }.to raise_error(/Invalid from date format/)
       end
     end
@@ -940,17 +941,17 @@ RSpec.describe ClaudeConversationExporter do
             'timestamp' => '2024-01-25T10:00:00Z'
           }
         ].map(&:to_json).join("\n")
-        
+
         File.write(session_file, filtered_content)
-        
+
         options = { from: '2024-01-10', to: '2024-01-20' }
-        result = described_class.new(project_path, output_dir, options).export
-        
+        result = described_class.new(project_path, output_dir, options.merge(silent: true)).export
+
         expect(result[:total_messages]).to eq(1) # Only Jan 15 message
-        
+
         markdown_file = Dir.glob(File.join(output_dir, '*.md')).first
         content = File.read(markdown_file)
-        
+
         expect(content).to include('Message from Jan 15')
         expect(content).not_to include('Message from Jan 5')
         expect(content).not_to include('Message from Jan 25')
@@ -979,8 +980,13 @@ RSpec.describe ClaudeConversationExporter do
       allow(File).to receive(:read).with(/preview_template\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
       allow(described_class).to receive(:system).with('open', anything)
 
+      # Mock output to capture messages without printing
+      expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+      expect(described_class).to receive(:puts).with(/HTML preview:/).once
+      expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
       result = described_class.generate_preview(output_dir, true, [])
-      
+
       expect(result).to be_a(String)
       expect(result).to end_with('.html')
     end
@@ -988,17 +994,25 @@ RSpec.describe ClaudeConversationExporter do
     it 'returns false when no markdown files exist' do
       FileUtils.rm_rf(output_dir)
       FileUtils.mkdir_p(output_dir)
-      
+
+      # Mock output to suppress puts statements
+      expect(described_class).to receive(:puts).with(/No markdown files found/).once
+
       result = described_class.generate_preview(output_dir, true, [])
-      
+
       expect(result).to be false
     end
 
     it 'returns false when cmark-gfm is not available' do
       allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(false)
-      
+
+      # Mock output to suppress puts statements
+      expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+      expect(described_class).to receive(:puts).with(/Error: cmark-gfm not found/).once
+      expect(described_class).to receive(:puts).with(/brew install cmark-gfm/).once
+
       result = described_class.generate_preview(output_dir, true, [])
-      
+
       expect(result).to be false
     end
 
@@ -1008,9 +1022,13 @@ RSpec.describe ClaudeConversationExporter do
       allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(false)
-      
+
+      # Mock output to suppress puts statements
+      expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+      expect(described_class).to receive(:puts).with(/Error: ERB template not found/).once
+
       result = described_class.generate_preview(output_dir, true, [])
-      
+
       expect(result).to be false
     end
 
@@ -1023,12 +1041,17 @@ RSpec.describe ClaudeConversationExporter do
       allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
       allow(File).to receive(:read).and_call_original
       allow(File).to receive(:read).with(/preview_template\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
-      
+
       # Ensure open command is not called
       expect(described_class).not_to receive(:system).with('open', anything)
 
+      # Mock output to suppress puts statements
+      expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+      expect(described_class).to receive(:puts).with(/HTML preview:/).once
+      expect(described_class).not_to receive(:puts).with(/Opening in browser/)
+
       result = described_class.generate_preview(output_dir, false, [])
-      
+
       expect(result).to be_a(String)
       expect(result).to end_with('.html')
     end
@@ -1043,7 +1066,12 @@ RSpec.describe ClaudeConversationExporter do
       allow(File).to receive(:read).and_call_original
       allow(File).to receive(:read).with(/preview_template\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
       allow(described_class).to receive(:system).with('open', anything)
-      
+
+      # Mock output to suppress puts statements
+      expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+      expect(described_class).to receive(:puts).with(/HTML preview:/).once
+      expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
       leaf_summaries = [{
         uuid: 'test-uuid',
         summary: 'Ruby Claude Code Exporter Test',
@@ -1051,10 +1079,10 @@ RSpec.describe ClaudeConversationExporter do
       }]
 
       result = described_class.generate_preview(output_dir, true, leaf_summaries)
-      
+
       expect(result).to be_a(String)
       expect(result).to end_with('.html')
-      
+
       # Check that the HTML file contains the leaf summary title
       html_content = File.read(result)
       expect(html_content).to include('<title>Ruby Claude Code Exporter Test</title>')
@@ -1074,9 +1102,14 @@ RSpec.describe ClaudeConversationExporter do
         allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(true)
         allow(File).to receive(:read).and_call_original
         allow(File).to receive(:read).with(/default\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
-        
+
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
         result = described_class.generate_preview(output_dir, true, [])
-        
+
         expect(result).to be_a(String)
         expect(result).to end_with('.html')
       end
@@ -1086,9 +1119,14 @@ RSpec.describe ClaudeConversationExporter do
         allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(true)
         allow(File).to receive(:read).and_call_original
         allow(File).to receive(:read).with(/default\.html\.erb$/).and_return('<!DOCTYPE html><html><head><title><%= title %></title></head><body><%= content %></body></html>')
-        
+
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
         result = described_class.generate_preview(output_dir, true, [], 'default')
-        
+
         expect(result).to be_a(String)
         expect(result).to end_with('.html')
       end
@@ -1098,7 +1136,7 @@ RSpec.describe ClaudeConversationExporter do
         templates_dir = File.join(File.dirname(__FILE__), '..', 'lib', 'templates')
         FileUtils.mkdir_p(templates_dir)
         custom_template_path = File.join(templates_dir, 'custom.html.erb')
-        
+
         File.write(custom_template_path, <<~ERB)
           <!DOCTYPE html>
           <html>
@@ -1106,12 +1144,17 @@ RSpec.describe ClaudeConversationExporter do
           <body><%= content %></body>
           </html>
         ERB
-        
+
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
         result = described_class.generate_preview(output_dir, true, [], 'custom')
-        
+
         expect(result).to be_a(String)
         expect(result).to end_with('.html')
-        
+
         # Cleanup
         File.delete(custom_template_path) if File.exist?(custom_template_path)
       end
@@ -1125,9 +1168,14 @@ RSpec.describe ClaudeConversationExporter do
           <body><%= content %></body>
           </html>
         ERB
-        
+
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
         result = described_class.generate_preview(output_dir, true, [], custom_template_path)
-        
+
         expect(result).to be_a(String)
         expect(result).to end_with('.html')
       end
@@ -1141,22 +1189,35 @@ RSpec.describe ClaudeConversationExporter do
           <body><%= content %></body>
           </html>
         ERB
-        
+
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
         result = described_class.generate_preview(output_dir, true, [], custom_template_path)
-        
+
         expect(result).to be_a(String)
         expect(result).to end_with('.html')
       end
 
       it 'returns false when template name does not exist in templates directory' do
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/Error: ERB template not found/).once
+
         result = described_class.generate_preview(output_dir, true, [], 'nonexistent')
-        
+
         expect(result).to be false
       end
 
       it 'returns false when template file path does not exist' do
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/Error: ERB template not found/).once
+
         result = described_class.generate_preview(output_dir, true, [], '/path/to/nonexistent.html.erb')
-        
+
         expect(result).to be false
       end
 
@@ -1169,18 +1230,23 @@ RSpec.describe ClaudeConversationExporter do
           <body>CONTENT: <%= content %></body>
           </html>
         ERB
-        
+
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
         leaf_summaries = [{
           uuid: 'test-uuid',
           summary: 'Custom Test Title',
           timestamp: '2024-01-01T12:00:00Z'
         }]
-        
+
         result = described_class.generate_preview(output_dir, true, leaf_summaries, custom_template_path)
-        
+
         expect(result).to be_a(String)
         expect(result).to end_with('.html')
-        
+
         # Check that ERB variables were processed correctly
         html_content = File.read(result)
         expect(html_content).to include('TITLE: Custom Test Title')
@@ -1188,6 +1254,10 @@ RSpec.describe ClaudeConversationExporter do
       end
 
       it 'detects template name vs path correctly based on slash' do
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).twice
+        expect(described_class).to receive(:puts).with(/Error: ERB template not found/).twice
+
         # Test that it tries templates directory for name without slash
         result = described_class.generate_preview(output_dir, true, [], 'custom')
         expect(result).to be false # Should fail because template doesn't exist
@@ -1198,6 +1268,10 @@ RSpec.describe ClaudeConversationExporter do
       end
 
       it 'detects template name vs path correctly based on .erb extension' do
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/Error: ERB template not found/).once
+
         # Test that it uses exact path when .erb extension is present
         result = described_class.generate_preview(output_dir, true, [], 'custom.html.erb')
         expect(result).to be false # Should fail because file doesn't exist at current location

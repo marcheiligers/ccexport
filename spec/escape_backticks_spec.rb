@@ -1,7 +1,7 @@
 require_relative 'spec_helper'
 
 RSpec.describe 'escape_backticks method' do
-  let(:exporter) { ClaudeConversationExporter.new }
+  let(:exporter) { create_silent_exporter }
 
   describe '#escape_backticks' do
     it 'should properly escape single backticks' do

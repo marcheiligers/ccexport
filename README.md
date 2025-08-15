@@ -105,6 +105,9 @@ puts "Total messages: #{result[:total_messages]}"
 # Process a specific JSONL file instead of scanning directories
 ./bin/ccexport --jsonl /path/to/conversation.jsonl --out specific-conversation.md
 
+# Silent mode for scripts (suppress progress output)
+./bin/ccexport --silent
+
 # Combine multiple options
 ./bin/ccexport --in /path/to/project --from 2024-01-15 --out ./my-exports --timestamps --preview
 ```
@@ -121,6 +124,7 @@ puts "Total messages: #{result[:total_messages]}"
 - `--no-open`: Generate HTML preview without opening in browser (requires --preview)
 - `--template NAME_OR_PATH`: HTML template name (from templates dir) or file path (default: default)
 - `--jsonl FILE`: Process a specific JSONL file instead of scanning directories
+- `-s`, `--silent`: Silent mode - suppress all output except errors
 - `--help`: Show usage information
 
 ### Available Templates

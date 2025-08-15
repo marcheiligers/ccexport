@@ -4,7 +4,7 @@ require 'tmpdir'
 RSpec.describe 'Secret Detection Integration' do
   let(:temp_dir) { Dir.mktmpdir }
   let(:output_dir) { File.join(temp_dir, 'output') }
-  let(:exporter) { ClaudeConversationExporter.new(temp_dir, output_dir) }
+  let(:exporter) { create_silent_exporter(temp_dir, output_dir) }
 
   after { FileUtils.rm_rf(temp_dir) }
 

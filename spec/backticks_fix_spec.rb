@@ -2,7 +2,7 @@ require_relative '../lib/claude_conversation_exporter'
 require 'json'
 
 RSpec.describe 'Backticks fix' do
-  let(:exporter) { ClaudeConversationExporter.new }
+  let(:exporter) { create_silent_exporter }
 
   describe '#fix_nested_backticks_in_content' do
     it 'fixes markdown blocks containing nested backticks from the fixture' do

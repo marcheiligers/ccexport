@@ -14,7 +14,10 @@ class ClaudeConversationExporter
       new(project_path, output_dir, options).export
     end
 
-    def generate_preview(output_path_or_dir, open_browser = true, leaf_summaries = [], template_name = 'default')
+    def generate_preview(output_path_or_dir, open_browser = true, leaf_summaries = [], template_name = 'default', silent = false)
+      # Helper method for output
+      output_helper = lambda { |message| puts message unless silent }
+      
       # Handle both directory and specific file paths
       if output_path_or_dir.end_with?('.md') && File.exist?(output_path_or_dir)
         # Specific markdown file provided
@@ -27,16 +30,16 @@ class ClaudeConversationExporter
       end
 
       if latest_md.nil? || !File.exist?(latest_md)
-        puts "No markdown files found in #{output_dir}/"
+        output_helper.call "No markdown files found in #{output_dir}/"
         return false
       end
 
-      puts "Creating preview for: #{File.basename(latest_md)}"
+      output_helper.call "Creating preview for: #{File.basename(latest_md)}"
 
       # Check if cmark-gfm is available
       unless system('which cmark-gfm > /dev/null 2>&1')
-        puts "Error: cmark-gfm not found. Install it with:"
-        puts "  brew install cmark-gfm"
+        output_helper.call "Error: cmark-gfm not found. Install it with:"
+        output_helper.call "  brew install cmark-gfm"
         return false
       end
 
@@ -44,7 +47,7 @@ class ClaudeConversationExporter
       md_html = `cmark-gfm --unsafe --extension table --extension strikethrough --extension autolink --extension tagfilter --extension tasklist "#{latest_md}"`
 
       if $?.exitstatus != 0
-        puts "Error running cmark-gfm"
+        output_helper.call "Error running cmark-gfm"
         return false
       end
 
@@ -57,7 +60,7 @@ class ClaudeConversationExporter
         template_path = File.join(File.dirname(__FILE__), 'templates', "#{template_name}.html.erb")
       end
       unless File.exist?(template_path)
-        puts "Error: ERB template not found at #{template_path}"
+        output_helper.call "Error: ERB template not found at #{template_path}"
         return false
       end
 
@@ -73,12 +76,12 @@ class ClaudeConversationExporter
       html_filename = latest_md.gsub(/\.md$/, '.html')
       File.write(html_filename, full_html)
 
-      puts "HTML preview: #{html_filename}"
+      output_helper.call "HTML preview: #{html_filename}"
 
       # Open in the default browser only if requested
       if open_browser
         system("open", html_filename)
-        puts "Opening in browser..."
+        output_helper.call "Opening in browser..."
       end
 
       html_filename
@@ -141,6 +144,7 @@ class ClaudeConversationExporter
     @compacted_conversation_processed = false
     @options = options
     @show_timestamps = options[:timestamps] || false
+    @silent = options[:silent] || false
     @leaf_summaries = []
     @skipped_messages = []
     @secrets_detected = []
@@ -174,9 +178,9 @@ class ClaudeConversationExporter
     end
 
     if @options[:jsonl]
-      puts "Processing specific JSONL file: #{File.basename(session_files.first)}"
+      output "Processing specific JSONL file: #{File.basename(session_files.first)}"
     else
-      puts "Found #{session_files.length} session file(s) in #{session_dir}"
+      output "Found #{session_files.length} session file(s) in #{session_dir}"
     end
 
     sessions = []
@@ -187,7 +191,7 @@ class ClaudeConversationExporter
       next if session[:messages].empty?
 
       sessions << session
-      puts "✓ #{session[:session_id]}: #{session[:messages].length} messages"
+      output "✓ #{session[:session_id]}: #{session[:messages].length} messages"
       total_messages += session[:messages].length
     end
 
@@ -195,7 +199,7 @@ class ClaudeConversationExporter
     sessions.sort_by! { |session| session[:first_timestamp] || '1970-01-01T00:00:00Z' }
 
     if sessions.empty?
-      puts "\nNo sessions to export"
+      output "\nNo sessions to export"
       return { sessions_exported: 0, total_messages: 0 }
     end
 
@@ -213,12 +217,16 @@ class ClaudeConversationExporter
     # Write secrets detection log if any secrets were detected
     write_secrets_log(output_path)
 
-    puts "\nExported #{sessions.length} conversations (#{total_messages} total messages) to #{output_path}"
+    output "\nExported #{sessions.length} conversations (#{total_messages} total messages) to #{output_path}"
 
     { sessions_exported: sessions.length, total_messages: total_messages, leaf_summaries: @leaf_summaries, output_file: output_path }
   end
 
   private
+
+  def output(message)
+    puts message unless @silent
+  end
 
   def track_skipped_message(line_index, reason, data = nil)
     return if reason == 'outside date range' # Don't log date range skips
@@ -245,7 +253,7 @@ class ClaudeConversationExporter
       end
     end
 
-    puts "Skipped #{@skipped_messages.length} messages (see #{File.basename(log_path)})"
+    output "Skipped #{@skipped_messages.length} messages (see #{File.basename(log_path)})"
   end
 
   def write_secrets_log(output_path)
@@ -259,8 +267,8 @@ class ClaudeConversationExporter
       end
     end
 
-    puts "⚠️  Detected #{@secrets_detected.length} potential secrets in conversation content (see #{File.basename(log_path)})"
-    puts "   Please review and ensure no sensitive information is shared in exports."
+    output "⚠️  Detected #{@secrets_detected.length} potential secrets in conversation content (see #{File.basename(log_path)})"
+    output "   Please review and ensure no sensitive information is shared in exports."
   end
 
   def setup_secret_detection
@@ -277,8 +285,8 @@ class ClaudeConversationExporter
     # Create a simple payload struct for scanning
     @payload_struct = Struct.new(:id, :data)
   rescue StandardError => e
-    puts "Warning: Secret detection initialization failed: #{e.message}"
-    puts "Proceeding without secret detection."
+    output "Warning: Secret detection initialization failed: #{e.message}"
+    output "Proceeding without secret detection."
     @secret_scanner = nil
   end
 
@@ -442,7 +450,7 @@ class ClaudeConversationExporter
         end
       rescue JSON::ParserError => e
         track_skipped_message(index, "invalid JSON: #{e.message}", nil)
-        puts "Warning: Skipping invalid JSON at line #{index + 1}: #{e.message}"
+        output "Warning: Skipping invalid JSON at line #{index + 1}: #{e.message}"
       end
     end
 
@@ -678,7 +686,7 @@ class ClaudeConversationExporter
 
     redacted_content
   rescue StandardError => e
-    puts "Warning: Secret detection/redaction failed for #{context_id}: #{e.message}"
+    output "Warning: Secret detection/redaction failed for #{context_id}: #{e.message}"
     content
   end
 
