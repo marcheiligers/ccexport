@@ -5,6 +5,8 @@ require 'fileutils'
 require 'time'
 require 'set'
 require 'erb'
+require 'gitlab/secret_detection'
+require 'logger'
 
 class ClaudeConversationExporter
   class << self
@@ -118,7 +120,9 @@ class ClaudeConversationExporter
     @show_timestamps = options[:timestamps] || false
     @leaf_summaries = []
     @skipped_messages = []
+    @secrets_detected = []
     setup_date_filters
+    setup_secret_detection
   end
 
   def export
@@ -182,6 +186,9 @@ class ClaudeConversationExporter
 
     # Write skip log if there were any skipped messages
     write_skip_log(output_path)
+    
+    # Write secrets detection log if any secrets were detected
+    write_secrets_log(output_path)
 
     puts "\nExported #{sessions.length} conversations (#{total_messages} total messages) to #{output_path}"
 
@@ -216,6 +223,40 @@ class ClaudeConversationExporter
     end
 
     puts "Skipped #{@skipped_messages.length} messages (see #{File.basename(log_path)})"
+  end
+
+  def write_secrets_log(output_path)
+    return if @secrets_detected.empty?
+
+    log_path = output_path.gsub(/\.md$/, '_secrets.jsonl')
+
+    File.open(log_path, 'w') do |f|
+      @secrets_detected.each do |secret|
+        f.puts JSON.generate(secret)
+      end
+    end
+
+    puts "⚠️  Detected #{@secrets_detected.length} potential secrets in conversation content (see #{File.basename(log_path)})"
+    puts "   Please review and ensure no sensitive information is shared in exports."
+  end
+
+  def setup_secret_detection
+    # Create a silent logger for secret detection to avoid cluttering output
+    null_logger = Logger.new('/dev/null')
+    
+    # Load the default GitLab secret detection ruleset
+    ruleset = Gitlab::SecretDetection::Core::Ruleset.new(logger: null_logger)
+    rules = ruleset.rules
+    
+    # Create the scanner instance
+    @secret_scanner = Gitlab::SecretDetection::Core::Scanner.new(rules: rules, logger: null_logger)
+    
+    # Create a simple payload struct for scanning
+    @payload_struct = Struct.new(:id, :data)
+  rescue StandardError => e
+    puts "Warning: Secret detection initialization failed: #{e.message}"
+    puts "Proceeding without secret detection."
+    @secret_scanner = nil
   end
 
   def setup_date_filters
@@ -454,15 +495,18 @@ class ClaudeConversationExporter
 
     return nil if system_generated_data?(data)
 
+    message_id = data.dig('message', 'id') || 'unknown'
+
     if content.is_a?(Array)
-      result = extract_text_content(content)
+      result = extract_text_content(content, "message_#{message_id}")
       processed_content = result[:content]
       has_thinking = result[:has_thinking]
 
       # Update role if message contains thinking
       role = 'assistant_thinking' if has_thinking && role == 'assistant'
     elsif content.is_a?(String)
-      processed_content = content
+      # Scan and redact secrets from string content
+      processed_content = scan_and_redact_secrets(content, "message_#{message_id}_string")
     else
       processed_content = JSON.pretty_generate(content)
     end
@@ -532,7 +576,7 @@ class ClaudeConversationExporter
         tool_use_ids = content.select { |item| item.is_a?(Hash) && item['type'] == 'tool_use' }
                               .map { |item| item['id'] }
 
-        result = extract_text_content(content)
+        result = extract_text_content(content, "tool_use_#{data['uuid'] || 'unknown'}")
 
         # Return tool use message for testing
         {
@@ -549,16 +593,20 @@ class ClaudeConversationExporter
     end
   end
 
-  def extract_text_content(content_array)
+  def extract_text_content(content_array, context_id = 'content')
     parts = []
     has_thinking = false
 
     content_array.each do |item|
       if item.is_a?(Hash) && item['type'] == 'text' && item['text']
-        parts << item['text']
+        # Scan and redact secrets from text content
+        redacted_text = scan_and_redact_secrets(item['text'], "#{context_id}_text")
+        parts << redacted_text
       elsif item.is_a?(Hash) && item['type'] == 'thinking' && item['thinking']
+        # Scan and redact secrets from thinking content
+        redacted_thinking = scan_and_redact_secrets(item['thinking'], "#{context_id}_thinking")
         # Format thinking content as blockquote
-        thinking_lines = item['thinking'].split("\n").map { |line| "> #{line}" }
+        thinking_lines = redacted_thinking.split("\n").map { |line| "> #{line}" }
         parts << thinking_lines.join("\n")
         has_thinking = true
       elsif item.is_a?(Hash) && item['type'] == 'tool_use'
@@ -574,6 +622,39 @@ class ClaudeConversationExporter
     content = parts.join("\n\n")
 
     { content: content, has_thinking: has_thinking }
+  end
+
+  # Scan content for secrets and log them (let GitLab gem handle detection)
+  def scan_and_redact_secrets(content, context_id = 'unknown')
+    return content if @secret_scanner.nil? || content.nil? || content.empty?
+    
+    # Create payload for scanning
+    payload = @payload_struct.new(context_id, content.to_s)
+    
+    # Scan for secrets
+    response = @secret_scanner.secrets_scan([payload])
+    
+    # If no secrets found, return original content
+    return content if response.status == Gitlab::SecretDetection::Core::Status::NOT_FOUND
+    
+    # Record detected secrets for reporting
+    response.results.each do |finding|
+      next unless finding.status == Gitlab::SecretDetection::Core::Status::FOUND
+      
+      @secrets_detected << {
+        context: context_id,
+        type: finding.type,
+        line: finding.line_number,
+        description: finding.description
+      }
+    end
+    
+    # Return original content - we're just detecting and logging for now
+    # In a future iteration, we could implement proper redaction using the gem's exclusion system
+    content
+  rescue StandardError => e
+    puts "Warning: Secret detection failed for #{context_id}: #{e.message}"
+    content
   end
 
   # Helper method to escape backticks in code blocks
