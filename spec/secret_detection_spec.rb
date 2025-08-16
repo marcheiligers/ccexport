@@ -85,12 +85,10 @@ RSpec.describe 'Secret Detection Integration' do
       expect(has_aws).to be true
       expect(has_slack).to be true
       
-      # Verify context information - secrets should be found in appropriate messages
-      user_secrets = secrets.select { |s| s['context'].include?('message_msg_test_user') }
-      assistant_secrets = secrets.select { |s| s['context'].include?('message_msg_test_assistant') }
+      # Verify context information - secrets should be found in final markdown
+      final_markdown_secrets = secrets.select { |s| s['context'].include?('final_markdown') }
       
-      expect(user_secrets.length).to be >= 2  # GitHub + AWS from user message
-      expect(assistant_secrets.length).to be >= 1  # Slack webhook from assistant message
+      expect(final_markdown_secrets.length).to be >= 3  # GitHub + AWS + Slack from final markdown
     end
 
     it 'should not create secrets log when no secrets are detected' do

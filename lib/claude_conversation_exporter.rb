@@ -569,8 +569,7 @@ class ClaudeConversationExporter
       # Update role if message contains thinking
       role = 'assistant_thinking' if has_thinking && role == 'assistant'
     elsif content.is_a?(String)
-      # Scan and redact secrets from string content
-      processed_content = scan_and_redact_secrets(content, "message_#{message_id}_string")
+      processed_content = content
     else
       processed_content = JSON.pretty_generate(content)
     end
@@ -663,14 +662,10 @@ class ClaudeConversationExporter
 
     content_array.each do |item|
       if item.is_a?(Hash) && item['type'] == 'text' && item['text']
-        # Scan and redact secrets from text content
-        redacted_text = scan_and_redact_secrets(item['text'], "#{context_id}_text")
-        parts << redacted_text
+        parts << item['text']
       elsif item.is_a?(Hash) && item['type'] == 'thinking' && item['thinking']
-        # Scan and redact secrets from thinking content
-        redacted_thinking = scan_and_redact_secrets(item['thinking'], "#{context_id}_thinking")
         # Format thinking content as blockquote
-        thinking_lines = redacted_thinking.split("\n").map { |line| "> #{line}" }
+        thinking_lines = item['thinking'].split("\n").map { |line| "> #{line}" }
         parts << thinking_lines.join("\n")
         has_thinking = true
       elsif item.is_a?(Hash) && item['type'] == 'tool_use'
@@ -1045,7 +1040,10 @@ class ClaudeConversationExporter
     end
 
     # Replace all absolute project paths with relative paths in the final output
-    make_paths_relative(md.join("\n"))
+    final_content = make_paths_relative(md.join("\n"))
+    
+    # Scan and redact secrets from the entire final markdown content
+    scan_and_redact_secrets(final_content, "final_markdown")
   end
 
   def format_markdown(session)
@@ -1079,7 +1077,10 @@ class ClaudeConversationExporter
     end
 
     # Replace all absolute project paths with relative paths in the final output
-    make_paths_relative(md.join("\n"))
+    final_content = make_paths_relative(md.join("\n"))
+    
+    # Scan and redact secrets from the entire final markdown content
+    scan_and_redact_secrets(final_content, "final_markdown")
   end
 
 
