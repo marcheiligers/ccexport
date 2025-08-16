@@ -31,12 +31,13 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 - **Skip Logging**: Comprehensive JSONL logs of skipped messages during export with reasons
 - **Message ID Tracking**: HTML comments with Claude message IDs for cross-referencing
 - **Individual File Processing**: Process specific JSONL files instead of scanning directories
-- **Secret Detection & Redaction**: Automatic detection and redaction of API keys, tokens, and other secrets using GitLab's proven ruleset
+- **Secret Detection & Redaction**: Automatic detection and redaction of API keys, tokens, and other secrets using TruffleHog's industry-standard detection engine
 
 ## Installation
 
 1. Clone this repository
 2. Install dependencies: `bundle install`
+3. Install TruffleHog for secret detection: `brew install trufflehog`
 
 ## Usage
 
@@ -210,24 +211,26 @@ The exporter automatically scans conversation content for common secrets and sen
 
 ### Automatic Detection & Redaction
 
-The tool uses the [`gitlab-secret_detection`](https://rubygems.org/gems/gitlab-secret_detection) gem to detect and redact:
+The tool uses [TruffleHog](https://github.com/trufflesecurity/trufflehog), the industry-standard secret detection engine, to detect and redact:
 
-- **API Keys**: AWS access keys, Google API keys, Azure tokens
-- **Authentication Tokens**: GitHub personal access tokens, GitLab tokens
-- **Service Tokens**: Slack bot tokens, Stripe keys, webhook URLs
-- **Private Keys**: SSH keys, TLS certificates, JWT secrets
+- **AWS Credentials**: Access keys and secret keys (requires both for detection)
+- **GitHub Tokens**: Personal access tokens, fine-grained tokens, OAuth tokens  
+- **Slack Webhooks**: Incoming webhook URLs and service integrations
+- **API Keys**: Google Cloud, Azure, Stripe, and 800+ other services
+- **Authentication Tokens**: JWT tokens, OAuth tokens, session tokens
+- **Private Keys**: SSH keys, TLS certificates, PGP keys
 - **Database Credentials**: Connection strings, passwords
-- **And 85+ other secret patterns** from GitLab's proven security ruleset
+- **And 800+ other secret types** from TruffleHog's actively maintained detection rules
 
 ### Detection & Redaction Process
 
 When secrets are detected, the exporter:
 
-1. **Automatically redacts** detected secrets using GitLab's proven masking algorithm
+1. **Automatically redacts** detected secrets with `[REDACTED]` placeholders
 2. **Continues the export** with redacted content (non-blocking)
 3. **Creates a detailed log** file: `*_secrets.jsonl`
 4. **Shows a warning** with the count of detected secrets
-5. **Logs structured data** including secret type, location, and context
+5. **Logs structured data** including detector name, verification status, and context
 
 ### Example Warning Output
 
@@ -241,9 +244,15 @@ When secrets are detected, the exporter:
 The generated `*_secrets.jsonl` file contains structured data for each detection:
 
 ```json
-{"context":"message_msg_01ABC123_text","type":"AWS","line":1,"description":"AWS access token"}
-{"context":"message_msg_01XYZ789_text","type":"Slack token","line":2,"description":"Slack bot user OAuth token"}
+{"context":"message_msg_01ABC123_text","type":"secret","pattern":"AWS","confidence":false}
+{"context":"message_msg_01XYZ789_text","type":"secret","pattern":"SlackWebhook","confidence":false}
 ```
+
+**Field explanations:**
+- `context`: Unique identifier for the message location
+- `type`: Always "secret" for TruffleHog detections  
+- `pattern`: TruffleHog detector name (e.g., "AWS", "Github", "SlackWebhook")
+- `confidence`: Boolean indicating if the secret was verified against the actual service
 
 ### Best Practices
 
@@ -257,21 +266,27 @@ The generated `*_secrets.jsonl` file contains structured data for each detection
 
 Original content with secrets:
 ```
-Here's my AWS key: AKIAIOSFODNN7EXAMPLE
-And my Slack token: xoxb-1234567890-1234567890123-abcdefghijklmnop
+Here's my GitHub token: ghp_1234567890123456789012345678901234567890
+AWS credentials: AKIA1234567890123456 secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY  
+Slack webhook: https://hooks.slack.com/services/T1234567890/B1234567890/abcdefghijklmnopqrstuvwx
 ```
 
 Automatically redacted output:
 ```
-Here's my AWS key: AKI*****ODN*****MPL*
-And my Slack token: xox*****456*****123*****901*****cde*****klm***
+Here's my GitHub token: [REDACTED]
+AWS credentials: [REDACTED] secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+Slack webhook: [REDACTED]
 ```
+
+**Note:** TruffleHog focuses on high-confidence secret patterns. Some parts may remain unredacted if they don't match specific detection patterns, which reduces false positives but requires manual review.
 
 ### Limitations
 
-- Detection is **pattern-based** and may have false positives/negatives
-- **Context-specific secrets** (like internal URLs, custom API endpoints) may not be detected
-- **Redaction uses conservative masking** - some non-secrets may be masked if they match patterns
+- Detection uses **800+ proven patterns** but may miss context-specific secrets
+- **TruffleHog is conservative** - it prioritizes avoiding false positives over catching everything
+- **Custom/internal secrets** (like internal URLs, custom API endpoints) may not be detected
+- **AWS detection requires both** access key and secret key for optimal detection
+- **Slack tokens** may not be detected if they don't match exact format patterns
 - **Human review is always required** before sharing
 
 ## Testing
@@ -296,7 +311,7 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 - **Integrated HTML Preview**: Generate and open HTML previews with GitHub styling and embedded Prism.js syntax highlighting
 - **Skip Logging & Message Tracking**: JSONL logs of filtered messages and HTML comment message IDs
 - **Individual File Processing**: Direct JSONL file processing with `--jsonl` option
-- **Secret Detection & Redaction**: Automatic security scanning and redaction using GitLab's secret detection ruleset
+- **Secret Detection & Redaction**: Automatic security scanning and redaction using TruffleHog's industry-standard detection engine
 - **Comprehensive testing**: 96 RSpec tests covering all functionality including secret detection
 - **Ruby-idiomatic**: Clean, maintainable Ruby code structure
 
@@ -304,6 +319,7 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 
 - Ruby 2.7+
 - Claude Code installed and configured
+- TruffleHog (for secret detection): `brew install trufflehog`
 - RSpec (for testing)
 - cmark-gfm (for HTML preview generation): `brew install cmark-gfm`
 

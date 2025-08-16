@@ -16,7 +16,7 @@ RSpec.describe 'Secret Detection Integration' do
           'message' => {
             'role' => 'user',
             'id' => 'msg_test_user',
-            'content' => 'Here is my AWS key: AKIAIOSFODNN7EXAMPLE'
+            'content' => 'Here is my GitHub token: ghp_1234567890123456789012345678901234567890 and AWS credentials: AKIA1234567890123456 secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
           }
         },
         {
@@ -27,7 +27,7 @@ RSpec.describe 'Secret Detection Integration' do
             'content' => [
               {
                 'type' => 'text',
-                'text' => 'I see you shared a Slack token: xoxb-1234567890-1234567890123-abcdefghijklmnop'
+                'text' => 'I see you shared a Slack webhook: https://hooks.slack.com/services/T1234567890/B1234567890/abcdefghijklmnopqrstuvwx'
               }
             ]
           }
@@ -52,9 +52,10 @@ RSpec.describe 'Secret Detection Integration' do
       
       # Verify that the exported markdown has redacted content
       md_content = File.read(md_files.first)
-      expect(md_content).to include('*****')  # Should contain masked secrets
-      expect(md_content).not_to include('AKIAIOSFODNN7EXAMPLE')  # Should not contain original AWS key
-      expect(md_content).not_to include('xoxb-1234567890-1234567890123-abcdefghijklmnop')  # Should not contain original Slack token
+      expect(md_content).to include('[REDACTED]')  # Should contain masked secrets
+      expect(md_content).not_to include('ghp_1234567890123456789012345678901234567890')  # Should not contain original GitHub token
+      expect(md_content).not_to include('AKIA1234567890123456')  # Should not contain original AWS access key
+      expect(md_content).not_to include('https://hooks.slack.com/services/T1234567890/B1234567890/abcdefghijklmnopqrstuvwx')  # Should not contain original Slack webhook
       
       # Check for secrets log file
       secrets_log_files = Dir.glob(File.join(output_dir, '*_secrets.jsonl'))
@@ -64,28 +65,32 @@ RSpec.describe 'Secret Detection Integration' do
       secrets_log = File.read(secrets_log_files.first)
       secrets = secrets_log.split("\n").map { |line| JSON.parse(line) }
       
-      expect(secrets.length).to eq(2)  # Should detect both AWS and Slack tokens
+      expect(secrets.length).to be >= 3  # Should detect GitHub, AWS, and Slack secrets
       
       # Verify basic structure of detected secrets
       secrets.each do |secret|
         expect(secret['context']).to be_a(String)
         expect(secret['type']).to be_a(String)
-        expect(secret['description']).to be_a(String)
-        expect(secret['line']).to be_a(Integer)
+        expect(secret['pattern']).to be_a(String)
+        # TruffleHog uses boolean for verified status
+        expect([true, false]).to include(secret['confidence'])
       end
       
-      # Should detect both AWS and Slack tokens
-      has_aws = secrets.any? { |s| s['type'].downcase.include?('aws') }
-      has_slack = secrets.any? { |s| s['type'].downcase.include?('slack') }
+      # Should detect GitHub, AWS, and Slack secrets
+      has_github = secrets.any? { |s| s['pattern'].downcase.include?('github') }
+      has_aws = secrets.any? { |s| s['pattern'].downcase.include?('aws') }
+      has_slack = secrets.any? { |s| s['pattern'].downcase.include?('slack') }
+      
+      expect(has_github).to be true
       expect(has_aws).to be true
       expect(has_slack).to be true
       
-      # Verify context information
-      aws_secret = secrets.find { |s| s['type'].downcase.include?('aws') }
-      slack_secret = secrets.find { |s| s['type'].downcase.include?('slack') }
+      # Verify context information - secrets should be found in appropriate messages
+      user_secrets = secrets.select { |s| s['context'].include?('message_msg_test_user') }
+      assistant_secrets = secrets.select { |s| s['context'].include?('message_msg_test_assistant') }
       
-      expect(aws_secret['context']).to include('message_msg_test_user')
-      expect(slack_secret['context']).to include('message_msg_test_assistant')
+      expect(user_secrets.length).to be >= 2  # GitHub + AWS from user message
+      expect(assistant_secrets.length).to be >= 1  # Slack webhook from assistant message
     end
 
     it 'should not create secrets log when no secrets are detected' do
@@ -118,23 +123,29 @@ RSpec.describe 'Secret Detection Integration' do
 
   describe 'secret detection methods' do
     it 'should detect and redact secrets in text content' do
-      test_content = 'AWS key: AKIAIOSFODNN7EXAMPLE'
+      test_content = 'GitHub token: ghp_1234567890123456789012345678901234567890 AWS: AKIA1234567890123456 secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY Slack: https://hooks.slack.com/services/T1234567890/B1234567890/abcdefghijklmnopqrstuvwx'
       
       result = exporter.send(:scan_and_redact_secrets, test_content, 'test')
       
       # Content should be redacted (secrets masked)
       expect(result).not_to eq(test_content)
-      expect(result).to include('AWS key:')
-      expect(result).to include('*****')  # Should contain masked content
-      expect(result).not_to include('AKIAIOSFODNN7EXAMPLE')  # Should not contain original secret
+      expect(result).to include('[REDACTED]')  # Should contain masked content
+      expect(result).not_to include('ghp_1234567890123456789012345678901234567890')  # Should not contain original GitHub token
+      expect(result).not_to include('AKIA1234567890123456')  # Should not contain original AWS access key
+      expect(result).not_to include('https://hooks.slack.com/services/T1234567890/B1234567890/abcdefghijklmnopqrstuvwx')  # Should not contain original Slack webhook
       
-      # Should have detected the secret
+      # Should have detected the secrets
       secrets_detected = exporter.instance_variable_get(:@secrets_detected)
-      expect(secrets_detected.length).to be >= 1
+      expect(secrets_detected.length).to be >= 3
       
-      aws_secret = secrets_detected.find { |s| s[:type].downcase.include?('aws') }
-      expect(aws_secret).not_to be_nil
-      expect(aws_secret[:context]).to eq('test')
+      # Verify different secret types were detected
+      has_github = secrets_detected.any? { |s| s[:pattern].downcase.include?('github') }
+      has_aws = secrets_detected.any? { |s| s[:pattern].downcase.include?('aws') }
+      has_slack = secrets_detected.any? { |s| s[:pattern].downcase.include?('slack') }
+      
+      expect(has_github).to be true
+      expect(has_aws).to be true  
+      expect(has_slack).to be true
     end
 
     it 'should handle empty or nil content gracefully' do

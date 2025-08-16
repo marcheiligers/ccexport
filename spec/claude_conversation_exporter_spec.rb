@@ -972,8 +972,15 @@ RSpec.describe ClaudeConversationExporter do
     it 'generates HTML preview when cmark-gfm is available' do
       # Mock system commands
       allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
-      allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
-      allow($?).to receive(:exitstatus).and_return(0)
+      
+      # Mock Open3.capture3 for cmark-gfm command
+      success_status = double('Process::Status', success?: true)
+      allow(Open3).to receive(:capture3).with(
+        'cmark-gfm', '--unsafe', '--extension', 'table', '--extension', 'strikethrough',
+        '--extension', 'autolink', '--extension', 'tagfilter', '--extension', 'tasklist',
+        anything
+      ).and_return(['<p>Test HTML</p>', '', success_status])
+      
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
       allow(File).to receive(:read).and_call_original
@@ -1019,7 +1026,6 @@ RSpec.describe ClaudeConversationExporter do
     it 'returns false when ERB template is missing' do
       allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
       allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
-      allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(/default\.html\.erb$/).and_return(false)
 
@@ -1036,7 +1042,6 @@ RSpec.describe ClaudeConversationExporter do
       # Mock system commands
       allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
       allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
-      allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
       allow(File).to receive(:read).and_call_original
@@ -1060,7 +1065,6 @@ RSpec.describe ClaudeConversationExporter do
       # Mock system commands
       allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
       allow(described_class).to receive(:`).and_return('<p>Test HTML</p>')
-      allow($?).to receive(:exitstatus).and_return(0)
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with(/preview_template\.html\.erb$/).and_return(true)
       allow(File).to receive(:read).and_call_original
@@ -1092,8 +1096,15 @@ RSpec.describe ClaudeConversationExporter do
       before do
         # Mock cmark-gfm system calls
         allow(described_class).to receive(:system).with('which cmark-gfm > /dev/null 2>&1').and_return(true)
-        allow(described_class).to receive(:`).and_return('<p>Test HTML content</p>')
-        allow($?).to receive(:exitstatus).and_return(0)
+        
+        # Mock Open3.capture3 for cmark-gfm command
+        success_status = double('Process::Status', success?: true)
+        allow(Open3).to receive(:capture3).with(
+          'cmark-gfm', '--unsafe', '--extension', 'table', '--extension', 'strikethrough',
+          '--extension', 'autolink', '--extension', 'tagfilter', '--extension', 'tasklist',
+          anything
+        ).and_return(['<p>Test HTML content</p>', '', success_status])
+        
         allow(described_class).to receive(:system).with('open', anything)
       end
 

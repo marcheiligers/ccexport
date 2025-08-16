@@ -5,8 +5,8 @@ require 'fileutils'
 require 'time'
 require 'set'
 require 'erb'
-require 'gitlab/secret_detection'
-require 'logger'
+require 'open3'
+require_relative 'secret_detector'
 
 class ClaudeConversationExporter
   class << self
@@ -45,12 +45,18 @@ class ClaudeConversationExporter
 
       # Use cmark-gfm to convert markdown to HTML with --unsafe for collapsed sections
       # The --unsafe flag prevents escaping in code blocks
-      md_html = `cmark-gfm --unsafe --extension table --extension strikethrough --extension autolink --extension tagfilter --extension tasklist "#{latest_md}"`
+      stdout, stderr, status = Open3.capture3(
+        'cmark-gfm', '--unsafe', '--extension', 'table', '--extension', 'strikethrough',
+        '--extension', 'autolink', '--extension', 'tagfilter', '--extension', 'tasklist',
+        latest_md
+      )
 
-      if $?.exitstatus != 0
-        output_helper.call "Error running cmark-gfm"
+      unless status.success?
+        output_helper.call "Error running cmark-gfm: #{stderr}"
         return false
       end
+
+      md_html = stdout
 
       # Load ERB template - support both template names and file paths
       if template_name.include?('/') || template_name.end_with?('.erb')
@@ -232,10 +238,10 @@ class ClaudeConversationExporter
 
   def detect_language_from_path(file_path)
     return '' if file_path.nil? || file_path.empty?
-    
+
     file_ext = File.extname(file_path).downcase
     file_name = File.basename(file_path)
-    
+
     case file_ext
     when '.rb' then 'ruby'
     when '.js' then 'javascript'
@@ -309,22 +315,12 @@ class ClaudeConversationExporter
   end
 
   def setup_secret_detection
-    # Create a silent logger for secret detection to avoid cluttering output
-    null_logger = Logger.new('/dev/null')
-
-    # Load the default GitLab secret detection ruleset
-    ruleset = Gitlab::SecretDetection::Core::Ruleset.new(logger: null_logger)
-    rules = ruleset.rules
-
-    # Create the scanner instance
-    @secret_scanner = Gitlab::SecretDetection::Core::Scanner.new(rules: rules, logger: null_logger)
-
-    # Create a simple payload struct for scanning
-    @payload_struct = Struct.new(:id, :data)
+    # Initialize our custom secret detector
+    @secret_detector = SecretDetector.new
   rescue StandardError => e
     output "Warning: Secret detection initialization failed: #{e.message}"
     output "Proceeding without secret detection."
-    @secret_scanner = nil
+    @secret_detector = nil
   end
 
   def setup_date_filters
@@ -692,34 +688,30 @@ class ClaudeConversationExporter
     { content: content, has_thinking: has_thinking }
   end
 
-  # Scan content for secrets and redact them using GitLab's masker
+  # Scan content for secrets and redact them using our custom detector
   def scan_and_redact_secrets(content, context_id = 'unknown')
-    return content if @secret_scanner.nil? || content.nil? || content.empty?
+    return content if @secret_detector.nil? || content.nil? || content.empty?
 
     original_content = content.to_s
 
     # Scan for secrets
-    payload = @payload_struct.new(context_id, original_content)
-    response = @secret_scanner.secrets_scan([payload])
+    findings = @secret_detector.scan(original_content)
 
     # If no secrets found, return original content
-    return content if response.status == Gitlab::SecretDetection::Core::Status::NOT_FOUND
+    return content if findings.empty?
 
     # Record detected secrets for logging
-    response.results.each do |finding|
-      next unless finding.status == Gitlab::SecretDetection::Core::Status::FOUND
-
+    findings.each do |finding|
       @secrets_detected << {
         context: context_id,
         type: finding.type,
-        line: finding.line_number,
-        description: finding.description
+        pattern: finding.pattern_name,
+        confidence: finding.confidence
       }
     end
 
-    # Apply GitLab's masker to the entire content
-    # This will mask anything that looks like a secret using their proven logic
-    redacted_content = mask_potential_secrets(original_content)
+    # Redact the secrets
+    redacted_content = @secret_detector.redact(original_content)
 
     redacted_content
   rescue StandardError => e
@@ -727,23 +719,6 @@ class ClaudeConversationExporter
     content
   end
 
-  # Use GitLab's masker on content that contains secrets
-  def mask_potential_secrets(content)
-    # Split into words and mask any that look like secrets
-    # This is a conservative approach that uses GitLab's proven masking logic
-    words = content.split(/(\s+)/)
-
-    masked_words = words.map do |word|
-      # Only mask words that are likely to be secrets (long, alphanumeric)
-      if word.length >= 20 && word.match?(/^[A-Za-z0-9+\/\-_]+$/)
-        Gitlab::SecretDetection::Utils::Masker.mask_secret(word)
-      else
-        word
-      end
-    end
-
-    masked_words.join
-  end
 
   # Helper method to escape backticks in code blocks
   def escape_backticks(content)

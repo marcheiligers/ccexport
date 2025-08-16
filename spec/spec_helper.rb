@@ -12,10 +12,8 @@ RSpec.configure do |config|
 
   config.mock_with :rspec do |mocks|
     mocks.verify_partial_doubles = true
-    mocks.allow_message_expectations_on_nil = true
+    # mocks.allow_message_expectations_on_nil = true
   end
 
   config.shared_context_metadata_behavior = :apply_to_host_groups
-  # config.allow_message_expectations_on_nil = true
-  # Mocks.configuration.allow_message_expectations_on_nil
 end
