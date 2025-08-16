@@ -1170,6 +1170,27 @@ RSpec.describe ClaudeConversationExporter do
         File.delete(custom_template_path) if File.exist?(custom_template_path)
       end
 
+      it 'uses solarized template with automatic dark/light mode detection' do
+        # Mock output to suppress puts statements
+        expect(described_class).to receive(:puts).with(/Creating preview for:/).once
+        expect(described_class).to receive(:puts).with(/HTML preview:/).once
+        expect(described_class).to receive(:puts).with(/Opening in browser/).once
+
+        result = described_class.generate_preview(output_dir, true, [], 'solarized')
+
+        expect(result).to be_a(String)
+        expect(result).to end_with('.html')
+        
+        # Check that the HTML file contains solarized-specific CSS and features
+        html_content = File.read(result)
+        expect(html_content).to include('prefers-color-scheme: dark')
+        expect(html_content).to include('--base03: #002b36')
+        expect(html_content).to include('theme-toggle')
+        expect(html_content).to include('data-theme')
+        expect(html_content).to include('localStorage.getItem')
+        expect(html_content).to include('toggleTheme')
+      end
+
       it 'uses full file path when path contains slash' do
         custom_template_path = File.join(temp_dir, 'custom_template.html.erb')
         File.write(custom_template_path, <<~ERB)

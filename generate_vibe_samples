@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+# Script to generate VIBE sample files for all available templates
+# Usage: ./generate_vibe_samples
+
+require 'pathname'
+
+# Get the script directory
+script_dir = Pathname(__FILE__).dirname.realpath
+templates_dir = script_dir / 'lib' / 'templates'
+
+# Define the base export command parameters
+base_command = [
+  './bin/ccexport',
+  '--preview',
+  '--no-open',
+  '--out=VIBE.md',
+  '--to="August 08, 2025 at 10:28:20 AM"'
+]
+
+# Find all available templates
+templates = Dir.glob(templates_dir / '*.html.erb').map do |template_file|
+  File.basename(template_file, '.html.erb')
+end.sort
+
+puts "Found #{templates.length} template(s): #{templates.join(', ')}"
+puts
+
+# Generate VIBE files for each template
+templates.each do |template|
+  puts "Generating VIBE sample for template: #{template}"
+  
+  # Build the command for this template
+  command = base_command + ["--template=#{template}"]
+  
+  # Execute the command
+  puts "  Running: #{command.join(' ')}"
+  success = system(*command)
+  
+  if success
+    # Move the generated HTML file to the proper VIBE name
+    source_html = script_dir / 'VIBE.html'
+    target_html = script_dir / "VIBE_#{template}.html"
+    
+    if source_html.exist?
+      source_html.rename(target_html)
+      puts "  ✅ Generated: #{target_html.basename}"
+    else
+      puts "  ❌ HTML file not found: #{source_html}"
+    end
+  else
+    puts "  ❌ Command failed for template: #{template}"
+  end
+  
+  puts
+end
+
+# Clean up the base VIBE.md file (it gets regenerated each time)
+vibe_md = script_dir / 'VIBE.md'
+if vibe_md.exist?
+  puts "Keeping VIBE.md (from last template: #{templates.last})"
+else
+  puts "Warning: VIBE.md not found"
+end
+
+puts "Done! Generated VIBE samples for all templates."
+puts
+puts "Files created:"
+templates.each do |template|
+  html_file = script_dir / "VIBE_#{template}.html"
+  if html_file.exist?
+    puts "  📄 VIBE_#{template}.html"
+  end
+end

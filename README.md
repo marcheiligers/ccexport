@@ -134,8 +134,27 @@ The exporter includes several built-in templates:
 
 - **`default`**: Clean, modern styling with rounded corners and a warm color palette
 - **`github`**: Mimics GitHub's markdown rendering with GitHub's official color scheme and typography
+- **`solarized`**: Beautiful Solarized color scheme with automatic light/dark mode detection based on user's system preference
 
 You can also create custom templates by placing `.html.erb` files in the `lib/templates/` directory or by specifying a full file path.
+
+#### Solarized Template Features
+
+The solarized template automatically adapts to your system's dark/light mode preference and includes an interactive theme toggle:
+
+- **Automatic Detection**: Uses CSS media queries to detect your system's preferred color scheme
+- **Manual Override**: Click the theme toggle button in the top-right corner to switch between modes
+- **Persistent Preference**: Your manual theme choice is saved in localStorage and remembered across sessions
+- **Consistent Colors**: Uses Ethan Schoonover's carefully designed Solarized color palette
+- **Smooth Transitions**: Animated transitions when switching between modes
+- **Professional Syntax Highlighting**: Syntax highlighting colors that match the Solarized aesthetic
+- **Accessibility**: Full keyboard support (Space/Enter to toggle) and proper ARIA labels
+- **Smart Behavior**: Respects manual preference while still responding to system changes when no manual preference is set
+
+```bash
+# Use solarized template
+./bin/ccexport --preview --template solarized
+```
 
 ## Output Format
 
@@ -325,7 +344,34 @@ The GitHub-flavored Markdown formatting features were implemented with reference
 
 ## Example Files
 
-The `VIBE.md` and `VIBE.html` files in this repository are examples generated from the actual Claude Code conversation that was used to build this tool. They demonstrate the full export functionality and formatting capabilities.
+The repository includes comprehensive examples generated from the actual Claude Code conversation that was used to build this tool:
+
+### Generated Examples
+
+- **[VIBE.md](VIBE.md)** - Full conversation export showing all features including tool use, thinking messages, message IDs, and formatting
+- **[VIBE_default.html](VIBE_default.html)** - HTML preview with default template styling and embedded Prism.js syntax highlighting
+- **[VIBE_github.html](VIBE_github.html)** - HTML preview with GitHub-style template mimicking GitHub's markdown rendering
+- **[VIBE_solarized.html](VIBE_solarized.html)** - HTML preview with Solarized template featuring automatic dark/light mode detection and clickable theme toggle
+
+### Features Demonstrated
+
+These examples showcase:
+- Multiple message types (user, assistant, thinking)
+- Tool use with collapsible sections and syntax highlighting  
+- Message ID HTML comments for cross-referencing
+- Path relativization and clean formatting
+- All advanced formatting features in action
+- Template comparison across different styling approaches
+
+### Regenerating Examples
+
+Use the included script to regenerate examples for all templates:
+
+```bash
+./generate_vibe_samples
+```
+
+This automatically creates VIBE sample files for each available template, making it easy to compare styling and features across all templates.
 
 ## License
 
