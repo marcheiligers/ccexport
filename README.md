@@ -1,6 +1,10 @@
 # Claude Code Conversation Exporter (Ruby)
 
-A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown format, styled to look similar to Claude Desktop conversations for easy reading.
+A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown format, or using templates, styled to look similar to Claude Desktop conversations, GitHub or, really any other style, for easy reading.
+
+&lt;noai&gt;
+I created this tool because, as I'm exploring using agentic coding tools, I've found myself wanting to share examples with friends and colleagues, so we can learn from each other. I have tried to fully vibe code this project, but I have, on occasion, gone rogue and hand coded tooling to help me and Claude better understand the JSONL structure or fix issues that it seemed to struggle with. I've used other tools, like Claude Desktop with Opus 4.1 and the humble web search. In fact, the very beginning of this project was conducted in Claude Desktop where I asked it to research tooling that already does what I was trying to do.
+&lt;/noai&gt;
 
 > **⚠️ Security Notice**: This tool includes automatic secret detection, but **always review your exports before sharing**. You are responsible for ensuring no sensitive information is included in shared conversation exports.
 
@@ -16,7 +20,7 @@ A Ruby tool to export Claude Code conversations to GitHub-flavored Markdown form
 
 ### Enhanced Tool Formatting
 - **Write Tool**: Shows relative file paths in summary with syntax-highlighted code blocks
-- **Bash Tool**: Displays command descriptions in summary with bash syntax highlighting  
+- **Bash Tool**: Displays command descriptions in summary with bash syntax highlighting
 - **Edit Tool**: Before/After sections showing old and new code with syntax highlighting
 - **TodoWrite Tool**: Emoji-enhanced task lists (✅ completed, 🔄 in progress, ⏳ pending)
 
@@ -49,19 +53,6 @@ Run the exporter in any directory where you've used Claude Code:
 require_relative 'lib/claude_conversation_exporter'
 
 ClaudeConversationExporter.export
-```
-
-### Custom Usage
-
-```ruby
-require_relative 'lib/claude_conversation_exporter'
-
-# Export from specific project path to custom output directory
-exporter = ClaudeConversationExporter.new('/path/to/project', 'my-conversations')
-result = exporter.export
-
-puts "Exported #{result[:sessions_exported]} conversations"
-puts "Total messages: #{result[:total_messages]}"
 ```
 
 ### Command Line Usage
@@ -98,7 +89,7 @@ puts "Total messages: #{result[:total_messages]}"
 ./bin/ccexport --preview --no-open
 
 # Use custom template
-./bin/ccexport --preview --template mytheme
+./bin/ccexport --preview --template mytemplate
 
 # Use GitHub-style template
 ./bin/ccexport --preview --template github
@@ -128,6 +119,19 @@ puts "Total messages: #{result[:total_messages]}"
 - `-s`, `--silent`: Silent mode - suppress all output except errors
 - `--help`: Show usage information
 
+### Custom Usage
+
+```ruby
+require_relative 'lib/claude_conversation_exporter'
+
+# Export from specific project path to custom output directory
+exporter = ClaudeConversationExporter.new('/path/to/project', 'my-conversations')
+result = exporter.export
+
+puts "Exported #{result[:sessions_exported]} conversations"
+puts "Total messages: #{result[:total_messages]}"
+```
+
 ### Available Templates
 
 The exporter includes several built-in templates:
@@ -138,31 +142,13 @@ The exporter includes several built-in templates:
 
 You can also create custom templates by placing `.html.erb` files in the `lib/templates/` directory or by specifying a full file path.
 
-#### Solarized Template Features
-
-The solarized template automatically adapts to your system's dark/light mode preference and includes an interactive theme toggle:
-
-- **Automatic Detection**: Uses CSS media queries to detect your system's preferred color scheme
-- **Manual Override**: Click the theme toggle button in the top-right corner to switch between modes
-- **Persistent Preference**: Your manual theme choice is saved in localStorage and remembered across sessions
-- **Consistent Colors**: Uses Ethan Schoonover's carefully designed Solarized color palette
-- **Smooth Transitions**: Animated transitions when switching between modes
-- **Professional Syntax Highlighting**: Syntax highlighting colors that match the Solarized aesthetic
-- **Accessibility**: Full keyboard support (Space/Enter to toggle) and proper ARIA labels
-- **Smart Behavior**: Respects manual preference while still responding to system changes when no manual preference is set
-
-```bash
-# Use solarized template
-./bin/ccexport --preview --template solarized
-```
-
 ## Output Format
 
 The exporter creates Markdown files with:
 
 - **Session metadata**: Session ID, timestamps (in local timezone), message counts
 - **User messages**: Marked with 👤 User
-- **Assistant messages**: Marked with 🤖 Assistant  
+- **Assistant messages**: Marked with 🤖 Assistant
 - **Thinking messages**: Marked with 🤖💭 Assistant with blockquoted content
 - **Tool use**: Marked with 🤖🔧 Assistant with collapsible sections and syntax highlighting
 - **Multiple sessions**: Combined into single file with clear session separators
@@ -181,7 +167,7 @@ For complete examples of the exported format, see the sample files in this repos
 
 These files demonstrate real conversation exports with:
 - Multiple message types (user, assistant, thinking)
-- Tool use with collapsible sections and syntax highlighting  
+- Tool use with collapsible sections and syntax highlighting
 - Message ID HTML comments for cross-referencing
 - Path relativization and clean formatting
 - All advanced formatting features in action
@@ -233,7 +219,7 @@ The exporter automatically scans conversation content for common secrets and sen
 The tool uses [TruffleHog](https://github.com/trufflesecurity/trufflehog), the industry-standard secret detection engine, to detect and redact:
 
 - **AWS Credentials**: Access keys and secret keys (requires both for detection)
-- **GitHub Tokens**: Personal access tokens, fine-grained tokens, OAuth tokens  
+- **GitHub Tokens**: Personal access tokens, fine-grained tokens, OAuth tokens
 - **Slack Webhooks**: Incoming webhook URLs and service integrations
 - **API Keys**: Google Cloud, Azure, Stripe, and 800+ other services
 - **Authentication Tokens**: JWT tokens, OAuth tokens, session tokens
@@ -269,7 +255,7 @@ The generated `*_secrets.jsonl` file contains structured data for each detection
 
 **Field explanations:**
 - `context`: Unique identifier for the message location
-- `type`: Always "secret" for TruffleHog detections  
+- `type`: Always "secret" for TruffleHog detections
 - `pattern`: TruffleHog detector name (e.g., "AWS", "Github", "SlackWebhook")
 - `confidence`: Boolean indicating if the secret was verified against the actual service
 
@@ -286,7 +272,7 @@ The generated `*_secrets.jsonl` file contains structured data for each detection
 Original content with secrets:
 ```
 Here's my GitHub token: ghp_1234567890123456789012345678901234567890
-AWS credentials: AKIA1234567890123456 secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY  
+AWS credentials: AKIA1234567890123456 secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 Slack webhook: https://hooks.slack.com/services/T1234567890/B1234567890/abcdefghijklmnopqrstuvwx
 ```
 
@@ -364,7 +350,7 @@ The repository includes comprehensive examples generated from the actual Claude 
 
 These examples showcase:
 - Multiple message types (user, assistant, thinking)
-- Tool use with collapsible sections and syntax highlighting  
+- Tool use with collapsible sections and syntax highlighting
 - Message ID HTML comments for cross-referencing
 - Path relativization and clean formatting
 - All advanced formatting features in action
