@@ -348,10 +348,17 @@ The repository includes comprehensive examples generated from the actual Claude 
 
 ### Generated Examples
 
-- **[VIBE.md](VIBE.md)** - Full conversation export showing all features including tool use, thinking messages, message IDs, and formatting
+- **[VIBE.md](VIBE.md)** - Conversation export showing all features including tool use, thinking messages, message IDs, and formatting (67 messages)
 - **[VIBE_default.html](VIBE_default.html)** - HTML preview with default template styling and embedded Prism.js syntax highlighting
 - **[VIBE_github.html](VIBE_github.html)** - HTML preview with GitHub-style template mimicking GitHub's markdown rendering
 - **[VIBE_solarized.html](VIBE_solarized.html)** - HTML preview with Solarized template featuring automatic dark/light mode detection and clickable theme toggle
+
+### Full Scale Example
+
+- **[VIBE_full.md](VIBE_full.md)** - Complete conversation export with all 3,806 messages across 5 sessions (7.3MB)
+- **[VIBE_full.html](VIBE_full.html)** - Complete HTML preview with default template (7.9MB)
+
+> **Note:** The full version demonstrates the exporter's capability to handle large, multi-session conversations that span the entire development of this tool. The regular VIBE examples above are filtered to a manageable size for easy browsing and template comparison.
 
 ### Features Demonstrated
 
