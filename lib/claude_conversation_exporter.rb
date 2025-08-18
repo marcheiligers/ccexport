@@ -99,6 +99,22 @@ class ClaudeConversationExporter
       # MIT License - https://github.com/PrismJS/prism
       css = File.read(File.join(__dir__, 'assets/prism.css'))
       js = File.read(File.join(__dir__, 'assets/prism.js'))
+      
+      # Additional language components
+      language_components = %w[
+        prism-python.js
+        prism-markdown.js
+        prism-typescript.js
+        prism-json.js
+        prism-yaml.js
+        prism-bash.js
+      ]
+      
+      # Load and concatenate language components
+      language_js = language_components.map do |component|
+        component_path = File.join(__dir__, 'assets', component)
+        File.exist?(component_path) ? File.read(component_path) : ""
+      end.join("\n")
 
       # Add initialization code to automatically highlight code blocks
       init_js = <<~JS
@@ -114,7 +130,7 @@ class ClaudeConversationExporter
       JS
 
       # Return both CSS and JS as a complete block
-      "<style>#{css}</style>\n<script>#{js}#{init_js}</script>"
+      "<style>#{css}</style>\n<script>#{js}\n#{language_js}#{init_js}</script>"
     end
 
     def extract_title_from_summaries_or_markdown(markdown_file, leaf_summaries = [])
