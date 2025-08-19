@@ -2,3 +2,6 @@ claude-conversations/
 docs/
 .DS_Store
 TEST.*
+
+# Gem build artifacts
+*.gem

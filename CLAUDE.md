@@ -154,3 +154,43 @@ brew install cmark-gfm
 - Test fixtures in `spec/fixtures/` with real JSONL data samples
 - Mocking of external dependencies (TruffleHog, cmark-gfm, system commands)
 - Comprehensive secret detection testing with realistic secret formats
+
+## Gem Distribution
+
+### RubyGem Structure
+- **Gem Name**: `ccexport`
+- **Version**: Managed in `lib/ccexport/version.rb`
+- **Executable**: `exe/ccexport` (installed globally as `ccexport` command)
+- **Entry Point**: `lib/ccexport.rb` (requires all necessary components)
+
+### Dependency Management
+**Automatic Installation**: The `exe/ccexport` executable includes automatic dependency checking and installation:
+
+1. **Dependency Detection**: Checks for `trufflehog` and `cmark-gfm` using `which` command
+2. **Auto-Install**: If Homebrew is available, automatically runs `brew install` for missing dependencies
+3. **Graceful Fallback**: Provides installation instructions and exits if dependencies can't be auto-installed
+4. **Skip Option**: `--skip-dependency-check` flag for advanced users or CI environments
+5. **Silent Mode**: Respects `--silent` flag for dependency operations
+
+### Build and Release Process
+```bash
+# Build gem locally
+gem build ccexport.gemspec
+
+# Install locally for testing
+gem install ./ccexport-0.1.0.gem
+
+# Test functionality
+ccexport --help
+```
+
+**Files Excluded from Gem**:
+- Test files (`spec/`)
+- Development scripts (`debug_compacted.rb`, `generate_vibe_samples`)
+- Example outputs (`VIBE*`, `claude-conversations/`)
+- Build artifacts (`*.gem`)
+
+### Installation Paths
+- **Quick Install**: `gem install ccexport` (dependencies auto-installed with Homebrew)
+- **Development**: Clone repo, `bundle install`, manual dependency installation
+- **Manual Setup**: Detailed Ruby + Homebrew installation instructions for non-developers
