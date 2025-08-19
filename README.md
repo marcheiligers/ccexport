@@ -185,6 +185,28 @@ gem install ccexport
 ccexport --help
 ```
 
+**If the `ccexport` command is not found after installation:**
+
+<details>
+<summary>Refresh your Ruby version manager (click to expand)</summary>
+
+```bash
+# rbenv users
+rbenv rehash
+
+# RVM users  
+rvm reload
+
+# asdf users
+asdf reshim ruby
+
+# mise users
+mise reshim
+```
+
+Then try running `ccexport --help` again.
+</details>
+
 **That's it!** When you first run ccexport, it will automatically detect and install any missing dependencies (TruffleHog and cmark-gfm) if you have Homebrew installed.
 
 **Manual dependency installation** (only needed if you don't have Homebrew):
