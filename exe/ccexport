@@ -1,0 +1,156 @@
+#!/usr/bin/env ruby
+
+require 'ccexport'
+require 'optparse'
+require 'time'
+
+# Check for required external dependencies
+def check_dependencies(silent = false)
+  missing_deps = []
+  
+  # Check for TruffleHog
+  unless system('which trufflehog > /dev/null 2>&1')
+    missing_deps << 'trufflehog'
+  end
+  
+  # Check for cmark-gfm
+  unless system('which cmark-gfm > /dev/null 2>&1')
+    missing_deps << 'cmark-gfm'
+  end
+  
+  return if missing_deps.empty?
+  
+  puts "Missing required dependencies: #{missing_deps.join(', ')}" unless silent
+  
+  # Check if Homebrew is available
+  if system('which brew > /dev/null 2>&1')
+    puts "\nAttempting to install missing dependencies via Homebrew..." unless silent
+    
+    success = true
+    missing_deps.each do |dep|
+      puts "Installing #{dep}..." unless silent
+      unless system(silent ? "brew install #{dep} > /dev/null 2>&1" : "brew install #{dep}")
+        puts "Failed to install #{dep}" unless silent
+        success = false
+      end
+    end
+    
+    if success
+      puts "✅ All dependencies installed successfully!" unless silent
+      return
+    else
+      puts "❌ Some dependencies failed to install" unless silent
+    end
+  else
+    puts "\nHomebrew not found." unless silent
+  end
+  
+  unless silent
+    puts "\nPlease install the missing dependencies manually:"
+    puts "- TruffleHog: https://github.com/trufflesecurity/trufflehog#installation"
+    puts "- cmark-gfm: Install via your system package manager or from source"
+    puts "\nFor detailed installation instructions, see:"
+    puts "https://github.com/marcheiligers/ccexport#installation"
+    puts "\nAlternatively, install Homebrew and run ccexport again for automatic installation:"
+    puts "https://brew.sh"
+  end
+  
+  exit 1
+end
+
+options = {}
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: ccexport [options]"
+  
+  parser.on("--from DATE", "Filter messages from this date (YYYY-MM-DD)") do |date|
+    options[:from] = date
+  end
+  
+  parser.on("--to DATE", "Filter messages to this date (YYYY-MM-DD)") do |date|
+    options[:to] = date
+  end
+  
+  parser.on("--today", "Filter messages from today only") do
+    options[:today] = true
+  end
+  
+  parser.on("--in PATH", "Project path to export conversations from (default: current directory)") do |path|
+    options[:in] = path
+  end
+  
+  parser.on("--out PATH", "Output directory or file path (default: claude-conversations)") do |path|
+    options[:out] = path
+  end
+  
+  parser.on("--timestamps", "Show timestamps with each message") do
+    options[:timestamps] = true
+  end
+  
+  parser.on("--preview", "Generate HTML preview and open in browser") do
+    options[:preview] = true
+  end
+  
+  parser.on("--no-open", "Generate HTML preview without opening in browser (requires --preview)") do
+    options[:no_open] = true
+  end
+  
+  parser.on("--template NAME_OR_PATH", "HTML template name (from templates dir) or file path (default: default)") do |template|
+    options[:template] = template
+  end
+  
+  parser.on("--jsonl FILE", "Process a specific JSONL file instead of scanning directories") do |file|
+    options[:jsonl] = file
+  end
+  
+  parser.on("-s", "--silent", "Silent mode - suppress all output") do
+    options[:silent] = true
+  end
+  
+  parser.on("--skip-dependency-check", "Skip checking for external dependencies") do
+    options[:skip_dependency_check] = true
+  end
+  
+  parser.on("-h", "--help", "Show this help message") do
+    puts parser
+    exit
+  end
+end.parse!
+
+# Check dependencies before proceeding (unless skipped)
+check_dependencies(options[:silent]) unless options[:skip_dependency_check]
+
+begin
+  # Validate options
+  if options[:no_open] && !options[:preview]
+    puts "Error: --no-open requires --preview" unless options[:silent]
+    exit 1
+  end
+  
+  if options[:jsonl] && !File.exist?(options[:jsonl])
+    puts "Error: JSONL file not found: #{options[:jsonl]}" unless options[:silent]
+    exit 1
+  end
+  
+  if options[:jsonl] && !options[:jsonl].end_with?('.jsonl')
+    puts "Error: File must have .jsonl extension: #{options[:jsonl]}" unless options[:silent]
+    exit 1
+  end
+  
+  project_path = options[:in] || Dir.pwd
+  output_dir = options[:out] || 'claude-conversations'
+  result = ClaudeConversationExporter.export(project_path, output_dir, options)
+  
+  # Generate preview if requested
+  if options[:preview]
+    # Use the actual output file if it was specified, otherwise use the directory
+    preview_target = result[:output_file] || output_dir
+    template_name = options[:template] || 'default'
+    ClaudeConversationExporter.generate_preview(preview_target, !options[:no_open], result[:leaf_summaries] || [], template_name, options[:silent])
+  end
+  
+  exit 0
+rescue StandardError => e
+  puts "Error: #{e.message}" unless options[:silent]
+  exit 1
+end

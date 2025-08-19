@@ -39,9 +39,201 @@ I created this tool because, as I'm exploring using agentic coding tools, I've f
 
 ## Installation
 
+### Quick Install (If you already have Ruby)
+
+```bash
+gem install ccexport
+```
+
+**Note**: If you have Homebrew installed, ccexport will automatically install missing dependencies (TruffleHog and cmark-gfm) when you first run it. If you don't have Homebrew, see the full setup instructions below.
+
+### Full Setup (For non-Ruby developers)
+
+If you don't have Ruby installed or aren't familiar with Ruby development, follow these steps:
+
+#### 1. Install Package Manager (if needed)
+
+**macOS users:** If you don't have Homebrew installed:
+
+```bash
+# Install Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Follow the "Next steps" instructions shown after installation to add Homebrew to your PATH
+```
+
+**Windows users with WSL (Windows Subsystem for Linux):**
+
+```bash
+# First, ensure you're running Ubuntu/Debian in WSL
+# Install Homebrew for Linux
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Add Homebrew to your PATH (replace USERNAME with your actual username)
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+source ~/.bashrc
+
+# Install build dependencies
+sudo apt-get update
+sudo apt-get install build-essential
+```
+
+**Ubuntu/Debian users (native Linux):**
+
+**Recommended: Use Homebrew for easier dependency management**
+
+```bash
+# Install Homebrew for Linux (same as WSL instructions)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Add Homebrew to your PATH
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+source ~/.bashrc
+
+# Install build dependencies
+sudo apt-get update
+sudo apt-get install build-essential
+```
+
+<details>
+<summary>Alternative: System package manager (more complex dependency management)</summary>
+
+```bash
+# Install basic dependencies
+sudo apt-get update
+sudo apt-get install curl git build-essential
+
+# Note: You'll need to manually install TruffleHog and cmark-gfm
+# TruffleHog: https://github.com/trufflesecurity/trufflehog#installation
+# cmark-gfm: You may need to build from source or find alternative packages
+```
+</details>
+
+#### 2. Install Ruby Version Manager
+
+**If you don't have a Ruby version manager yet, we recommend rbenv:**
+
+```bash
+# macOS with Homebrew
+brew install rbenv ruby-build
+
+# Ubuntu/Debian
+sudo apt install rbenv
+
+# Add rbenv to your shell
+echo 'eval "$(rbenv init -)"' >> ~/.bashrc
+# or for zsh users:
+echo 'eval "$(rbenv init -)"' >> ~/.zshrc
+
+# Restart your terminal or run:
+source ~/.bashrc  # or ~/.zshrc
+```
+
+**If you already use a different Ruby version manager:**
+
+<details>
+<summary>RVM Users</summary>
+
+```bash
+# Install latest Ruby 3.4
+rvm install 3.4
+rvm use 3.4 --default
+```
+</details>
+
+<details>
+<summary>asdf Users</summary>
+
+```bash
+# Add Ruby plugin if not already added
+asdf plugin add ruby
+
+# Install latest Ruby 3.4
+asdf install ruby latest:3.4
+asdf global ruby latest:3.4
+```
+</details>
+
+<details>
+<summary>mise Users (formerly rtx)</summary>
+
+```bash
+# Install latest Ruby 3.4
+mise install ruby@3.4
+mise global ruby@3.4
+```
+</details>
+
+#### 3. Install Ruby 3.4 (rbenv users)
+
+```bash
+# Install latest Ruby 3.4
+rbenv install 3.4.3
+rbenv global 3.4.3
+
+# Verify installation
+ruby --version  # Should show Ruby 3.4.3
+```
+
+#### 4. Install ccexport
+
+```bash
+# Install the gem
+gem install ccexport
+
+# Run ccexport - it will automatically install dependencies via Homebrew if needed
+ccexport --help
+```
+
+**If the `ccexport` command is not found after installation:**
+
+<details>
+<summary>Refresh your Ruby version manager (click to expand)</summary>
+
+```bash
+# rbenv users
+rbenv rehash
+
+# RVM users  
+rvm reload
+
+# asdf users
+asdf reshim ruby
+
+# mise users
+mise reshim
+```
+
+Then try running `ccexport --help` again.
+</details>
+
+**That's it!** When you first run ccexport, it will automatically detect and install any missing dependencies (TruffleHog and cmark-gfm) if you have Homebrew installed.
+
+**Manual dependency installation** (only needed if you don't have Homebrew):
+```bash
+# If you're using system package managers instead of Homebrew:
+# - TruffleHog: https://github.com/trufflesecurity/trufflehog#installation  
+# - cmark-gfm: May require building from source on some Linux distributions
+
+# To skip dependency checking entirely:
+ccexport --skip-dependency-check
+```
+
+### From Source (Development)
+
 1. Clone this repository
 2. Install dependencies: `bundle install`
 3. Install TruffleHog for secret detection: `brew install trufflehog`
+
+### Prerequisites Summary
+
+- **Ruby**: 3.0.0 or higher (3.4.3 recommended)
+- **Homebrew**: Recommended for automatic dependency installation ([installation guide](https://brew.sh))
+- **TruffleHog** and **cmark-gfm**: Automatically installed via Homebrew when you first run ccexport
+
+**Manual installation only needed if you don't have Homebrew:**
+- **TruffleHog**: For secret detection ([installation guide](https://github.com/trufflesecurity/trufflehog#installation))
+- **cmark-gfm**: For HTML preview generation
 
 ## Usage
 
@@ -49,8 +241,15 @@ I created this tool because, as I'm exploring using agentic coding tools, I've f
 
 Run the exporter in any directory where you've used Claude Code:
 
+```bash
+# Basic usage - export all conversations
+ccexport
+```
+
+### Ruby API Usage
+
 ```ruby
-require_relative 'lib/claude_conversation_exporter'
+require 'ccexport'
 
 ClaudeConversationExporter.export
 ```
@@ -59,49 +258,49 @@ ClaudeConversationExporter.export
 
 ```bash
 # Basic usage - export all conversations
-./bin/ccexport
+ccexport
 
 # Filter by date range
-./bin/ccexport --from 2024-01-01 --to 2024-01-31
+ccexport --from 2024-01-01 --to 2024-01-31
 
 # Filter using timestamp format (copy from --timestamps output)
-./bin/ccexport --from "August 09, 2025 at 06:03:43 PM"
+ccexport --from "August 09, 2025 at 06:03:43 PM"
 
 # Export only today's conversations
-./bin/ccexport --today
+ccexport --today
 
 # Export from different project directory
-./bin/ccexport --in /path/to/project
+ccexport --in /path/to/project
 
 # Custom output directory
-./bin/ccexport --out /path/to/output
+ccexport --out /path/to/output
 
-# Output to specific file (creates matching .html for preview)
-./bin/ccexport --out myconversation.md --preview
+# Export to specific markdown file with preview
+ccexport --out myconversation.md --preview
 
-# Show timestamps with each message
-./bin/ccexport --timestamps
+# Include timestamps
+ccexport --timestamps
 
 # Generate HTML preview and open in browser
-./bin/ccexport --preview
+ccexport --preview
 
 # Generate HTML preview without opening browser
-./bin/ccexport --preview --no-open
+ccexport --preview --no-open
 
 # Use custom template
-./bin/ccexport --preview --template mytemplate
+ccexport --preview --template mytemplate
 
-# Use GitHub-style template
-./bin/ccexport --preview --template github
+# Use GitHub template
+ccexport --preview --template github
 
-# Process a specific JSONL file instead of scanning directories
-./bin/ccexport --jsonl /path/to/conversation.jsonl --out specific-conversation.md
+# Process specific JSONL file
+ccexport --jsonl /path/to/conversation.jsonl --out specific-conversation.md
 
-# Silent mode for scripts (suppress progress output)
-./bin/ccexport --silent
+# Silent mode (suppress all output)
+ccexport --silent
 
-# Combine multiple options
-./bin/ccexport --in /path/to/project --from 2024-01-15 --out ./my-exports --timestamps --preview
+# Complex example: custom project, date range, output, timestamps, and preview
+ccexport --in /path/to/project --from 2024-01-15 --out ./my-exports --timestamps --preview
 ```
 
 #### Command Line Options

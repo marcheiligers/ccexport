@@ -1,3 +1,8 @@
-source 'https://rubygems.org'
+# frozen_string_literal: true
 
-gem 'rspec', '~> 3.12'
+source "https://rubygems.org"
+
+# Specify your gem's dependencies in ccexport.gemspec
+gemspec
+
+gem "rake", "~> 13.0"
