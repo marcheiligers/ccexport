@@ -1171,7 +1171,9 @@ class ClaudeConversationExporter
       lines << ""
     end
 
-    lines << message[:content]
+    content = message[:content]
+    content = content.gsub(/\A[[:space:] ]+/, '') if @clean
+    lines << content
     lines << ""
 
     lines
