@@ -48,7 +48,11 @@ OptionParser.new do |parser|
   parser.on("--jsonl FILE", "Process a specific JSONL file instead of scanning directories") do |file|
     options[:jsonl] = file
   end
-  
+
+  parser.on("--session ID", "Export a specific session by its UUID") do |id|
+    options[:session] = id
+  end
+
   parser.on("-s", "--silent", "Silent mode - suppress all output") do
     options[:silent] = true
   end

@@ -296,6 +296,9 @@ ccexport --preview --template github
 # Process specific JSONL file
 ccexport --jsonl /path/to/conversation.jsonl --out specific-conversation.md
 
+# Process specific session
+ccexport --session aee5189e-cdc7-42fd-9aa1-96ae42c12826
+
 # Silent mode (suppress all output)
 ccexport --silent
 
