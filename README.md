@@ -246,6 +246,12 @@ Run the exporter in any directory where you've used Claude Code:
 ccexport
 ```
 
+If this command does not work on macOS, this can potentially work in some cases:
+
+```
+$(gem environment gemdir)/bin/ccexport
+```
+
 ### Ruby API Usage
 
 ```ruby
