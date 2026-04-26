@@ -167,6 +167,7 @@ class ClaudeConversationExporter
     @compacted_conversation_processed = false
     @options = options
     @show_timestamps = options[:timestamps] || false
+    @clean = options[:clean] || false
     @silent = options[:silent] || false
     @leaf_summaries = []
     @skipped_messages = []
@@ -479,6 +480,10 @@ class ClaudeConversationExporter
             @compacted_conversation_processed = true
           end
         elsif data.key?('toolUseResult')
+          if @clean
+            # In clean mode, skip tool results entirely
+            next
+          end
           # Pair with previous tool_use
           if pending_tool_use
             messages << format_combined_tool_use(pending_tool_use, data)
@@ -487,7 +492,13 @@ class ClaudeConversationExporter
         elsif data.key?('requestId') || regular_message?(data)
           # Check if this assistant message contains tool_use
           if tool_use_message?(data)
-            pending_tool_use = data # Hold for pairing with next toolUseResult
+            if @clean
+              # In clean mode, extract only text content from tool_use messages
+              message = format_regular_message(data)
+              messages << message if message
+            else
+              pending_tool_use = data # Hold for pairing with next toolUseResult
+            end
           else
             message = format_regular_message(data)
             if message
@@ -680,14 +691,17 @@ class ClaudeConversationExporter
       if item.is_a?(Hash) && item['type'] == 'text' && item['text']
         parts << item['text']
       elsif item.is_a?(Hash) && item['type'] == 'thinking' && item['thinking']
+        next if @clean
         # Format thinking content as blockquote
         thinking_lines = item['thinking'].split("\n").map { |line| "> #{line}" }
         parts << thinking_lines.join("\n")
         has_thinking = true
       elsif item.is_a?(Hash) && item['type'] == 'tool_use'
+        next if @clean
         # Format tool_use without tool_result (will be paired later at message level)
         parts << format_tool_use(item, nil)
       else
+        next if @clean
         # Preserve other content types as JSON for now
         parts << JSON.pretty_generate(item)
       end
@@ -994,38 +1008,41 @@ class ClaudeConversationExporter
 
   def format_combined_markdown(sessions)
     md = []
-    title = get_markdown_title
-    md << "# #{title}"
-    md << ""
 
     if sessions.length == 1
       # Single session - use original format
       return format_markdown(sessions.first)
     end
 
-    # Multiple sessions - combined format
-    total_messages = sessions.sum { |s| s[:messages].length }
-    total_user = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'user' } }
-    total_assistant = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'assistant' } }
+    unless @clean
+      title = get_markdown_title
+      md << "# #{title}"
+      md << ""
 
-    md << "**Sessions:** #{sessions.length}"
-    md << "**Total Messages:** #{total_messages} (#{total_user} user, #{total_assistant} assistant)"
-    md << ""
+      # Multiple sessions - combined format
+      total_messages = sessions.sum { |s| s[:messages].length }
+      total_user = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'user' } }
+      total_assistant = sessions.sum { |s| s[:messages].count { |m| m[:role] == 'assistant' } }
 
-    first_timestamp = sessions.map { |s| s[:first_timestamp] }.compact.min
-    last_timestamp = sessions.map { |s| s[:last_timestamp] }.compact.max
+      md << "**Sessions:** #{sessions.length}"
+      md << "**Total Messages:** #{total_messages} (#{total_user} user, #{total_assistant} assistant)"
+      md << ""
 
-    if first_timestamp
-      md << "**Started:** #{Time.parse(first_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+      first_timestamp = sessions.map { |s| s[:first_timestamp] }.compact.min
+      last_timestamp = sessions.map { |s| s[:last_timestamp] }.compact.max
+
+      if first_timestamp
+        md << "**Started:** #{Time.parse(first_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+      end
+
+      if last_timestamp
+        md << "**Last activity:** #{Time.parse(last_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+      end
+
+      md << ""
+      md << "---"
+      md << ""
     end
-
-    if last_timestamp
-      md << "**Last activity:** #{Time.parse(last_timestamp).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
-    end
-
-    md << ""
-    md << "---"
-    md << ""
 
     # Process each session with separators
     sessions.each_with_index do |session, session_index|
@@ -1033,19 +1050,22 @@ class ClaudeConversationExporter
         md << ""
         md << "---"
         md << ""
-        md << "# Session #{session_index + 1}"
-        md << ""
-        md << "**Session ID:** `#{session[:session_id]}`"
 
-        if session[:first_timestamp]
-          md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+        unless @clean
+          md << "# Session #{session_index + 1}"
+          md << ""
+          md << "**Session ID:** `#{session[:session_id]}`"
+
+          if session[:first_timestamp]
+            md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+          end
+
+          user_count = session[:messages].count { |m| m[:role] == 'user' }
+          assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
+
+          md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
+          md << ""
         end
-
-        user_count = session[:messages].count { |m| m[:role] == 'user' }
-        assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
-
-        md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
-        md << ""
       end
 
       # Add messages for this session
@@ -1064,27 +1084,30 @@ class ClaudeConversationExporter
 
   def format_markdown(session)
     md = []
-    title = get_markdown_title
-    md << "# #{title}"
-    md << ""
-    md << "**Session:** `#{session[:session_id]}`"
-    md << ""
 
-    if session[:first_timestamp]
-      md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+    unless @clean
+      title = get_markdown_title
+      md << "# #{title}"
+      md << ""
+      md << "**Session:** `#{session[:session_id]}`"
+      md << ""
+
+      if session[:first_timestamp]
+        md << "**Started:** #{Time.parse(session[:first_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+      end
+
+      if session[:last_timestamp]
+        md << "**Last activity:** #{Time.parse(session[:last_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
+      end
+
+      user_count = session[:messages].count { |m| m[:role] == 'user' }
+      assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
+
+      md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
+      md << ""
+      md << "---"
+      md << ""
     end
-
-    if session[:last_timestamp]
-      md << "**Last activity:** #{Time.parse(session[:last_timestamp]).getlocal.strftime('%B %d, %Y at %I:%M %p')}"
-    end
-
-    user_count = session[:messages].count { |m| m[:role] == 'user' }
-    assistant_count = session[:messages].count { |m| m[:role] == 'assistant' }
-
-    md << "**Messages:** #{session[:messages].length} (#{user_count} user, #{assistant_count} assistant)"
-    md << ""
-    md << "---"
-    md << ""
 
     # Process messages linearly - they're already processed and paired
     session[:messages].each_with_index do |message, index|
@@ -1115,8 +1138,10 @@ class ClaudeConversationExporter
                    when 'assistant'
                      "## 🤖 Assistant"
                    when 'assistant_thinking'
+                     return [] if @clean
                      "## 🤖💭 Assistant"
                    when 'system'
+                     return [] if @clean
                      "## ⚙️ System"
                    end
 
@@ -1133,9 +1158,11 @@ class ClaudeConversationExporter
 
       lines << role_header
 
-      # Add message ID as HTML comment if available
-      if message[:message_id]
-        lines << "<!-- #{message[:message_id]} -->"
+      unless @clean
+        # Add message ID as HTML comment if available
+        if message[:message_id]
+          lines << "<!-- #{message[:message_id]} -->"
+        end
       end
 
       lines << ""
