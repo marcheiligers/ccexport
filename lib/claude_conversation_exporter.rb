@@ -486,7 +486,8 @@ class ClaudeConversationExporter
           end
           # Pair with previous tool_use
           if pending_tool_use
-            messages << format_combined_tool_use(pending_tool_use, data)
+            message = format_combined_tool_use(pending_tool_use, data)
+            messages << message if message
             pending_tool_use = nil
           end
         elsif data.key?('requestId') || regular_message?(data)
@@ -588,6 +589,8 @@ class ClaudeConversationExporter
 
     message_id = data.dig('message', 'id') || 'unknown'
 
+    return nil if content.nil?
+
     if content.is_a?(Array)
       result = extract_text_content(content, "message_#{message_id}")
       processed_content = result[:content]
@@ -601,7 +604,7 @@ class ClaudeConversationExporter
       processed_content = JSON.pretty_generate(content)
     end
 
-    return nil if processed_content.strip.empty?
+    return nil if processed_content.nil? || processed_content.strip.empty?
 
     # Fix nested backticks in regular content
     processed_content = fix_nested_backticks_in_content(processed_content)
