@@ -107,10 +107,14 @@ OptionParser.new do |parser|
     options[:silent] = true
   end
   
+  parser.on("--gist", "Upload exported markdown as a private GitHub Gist (requires gh CLI)") do
+    options[:gist] = true
+  end
+
   parser.on("--skip-dependency-check", "Skip checking for external dependencies") do
     options[:skip_dependency_check] = true
   end
-  
+
   parser.on("-h", "--help", "Show this help message") do
     puts parser
     exit
@@ -148,7 +152,11 @@ begin
     template_name = options[:template] || 'default'
     ClaudeConversationExporter.generate_preview(preview_target, !options[:no_open], result[:leaf_summaries] || [], template_name, options[:silent])
   end
-  
+
+  if options[:gist] && result[:output_file]
+    ClaudeConversationExporter.upload_gist(result[:output_file], options[:silent])
+  end
+
   exit 0
 rescue StandardError => e
   puts "Error: #{e.message}" unless options[:silent]

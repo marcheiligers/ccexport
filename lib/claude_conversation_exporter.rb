@@ -94,6 +94,38 @@ class ClaudeConversationExporter
       html_filename
     end
 
+    def upload_gist(markdown_path, silent = false)
+      output_helper = lambda { |message| puts message unless silent }
+
+      unless system('which gh > /dev/null 2>&1')
+        raise "gh CLI not found. Install it from https://cli.github.com/ and run 'gh auth login'"
+      end
+
+      unless File.exist?(markdown_path)
+        raise "Markdown file not found: #{markdown_path}"
+      end
+
+      filename = File.basename(markdown_path)
+      content = File.read(markdown_path)
+      description = "Claude Code conversation export: #{filename}"
+
+      stdout, stderr, status = Open3.capture3(
+        'gh', 'api', '--method', 'POST', '/gists',
+        '-f', "description=#{description}",
+        '-f', 'public=false',
+        '-f', "files[#{filename}][content]=#{content}"
+      )
+
+      unless status.success?
+        raise "Failed to create gist: #{stderr}"
+      end
+
+      response = JSON.parse(stdout)
+      html_url = response['html_url']
+      output_helper.call "Gist created: #{html_url}"
+      html_url
+    end
+
     def include_prism
       # Prism.js CSS and JavaScript for syntax highlighting
       # MIT License - https://github.com/PrismJS/prism
