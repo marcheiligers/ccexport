@@ -176,7 +176,11 @@ class ClaudeConversationExporter
   end
 
   def export
-    if @options[:jsonl]
+    if @options[:session]
+      session_file = find_session_file(@options[:session])
+      session_files = [session_file]
+      session_dir = File.dirname(session_file)
+    elsif @options[:jsonl]
       # Process specific JSONL file
       session_files = [File.expand_path(@options[:jsonl])]
       session_dir = File.dirname(session_files.first)
@@ -426,6 +430,17 @@ class ClaudeConversationExporter
     raise "No Claude sessions found for project: #{@project_path}" if candidates.empty?
 
     candidates.first
+  end
+
+  def find_session_file(session_id)
+    projects_dir = File.join(@claude_home, 'projects')
+    filename = "#{session_id}.jsonl"
+
+    Dir.glob(File.join(projects_dir, '*', filename)).each do |path|
+      return path
+    end
+
+    raise "No session found with ID: #{session_id}"
   end
 
   def encode_path(path)
