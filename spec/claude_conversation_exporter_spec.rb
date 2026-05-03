@@ -246,6 +246,45 @@ RSpec.describe ClaudeConversationExporter do
       expect(result[:total_messages]).to eq(0)
     end
 
+    context 'with --session option' do
+      let(:session_id) { 'abc12345-1234-1234-1234-abcdef123456' }
+      let(:target_session_file) { File.join(session_dir, "#{session_id}.jsonl") }
+
+      before do
+        File.write(target_session_file, jsonl_content)
+      end
+
+      it 'exports only the specified session' do
+        other_file = File.join(session_dir, 'other-session.jsonl')
+        File.write(other_file, [
+          { 'message' => { 'role' => 'user', 'content' => 'Other session' }, 'timestamp' => '2024-01-02T10:00:00Z' }
+        ].map(&:to_json).join("\n"))
+
+        result = described_class.new(project_path, output_dir, { session: session_id, silent: true }).export
+
+        expect(result[:sessions_exported]).to eq(1)
+        content = File.read(result[:output_file])
+        expect(content).to include('Hello, how are you?')
+        expect(content).not_to include('Other session')
+      end
+
+      it 'finds the session file across project directories' do
+        other_project_dir = File.join(projects_dir, '-Users-test-other-project')
+        FileUtils.mkdir_p(other_project_dir)
+        File.write(File.join(other_project_dir, "#{session_id}.jsonl"), jsonl_content)
+
+        result = described_class.new('/Users/test/other_project', output_dir, { session: session_id, silent: true }).export
+
+        expect(result[:sessions_exported]).to eq(1)
+      end
+
+      it 'raises an error when session ID is not found' do
+        expect {
+          described_class.new(project_path, output_dir, { session: 'nonexistent-id', silent: true }).export
+        }.to raise_error(/No session found with ID: nonexistent-id/)
+      end
+    end
+
     it 'skips system-generated messages' do
       system_content = [
         {

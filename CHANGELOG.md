@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add `--session ID` option to process a specific session. Thanks to @kopyl
+
 ## [0.1.0] - 2024-08-17
 
 ### Added
