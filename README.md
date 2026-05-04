@@ -194,7 +194,7 @@ ccexport --help
 # rbenv users
 rbenv rehash
 
-# RVM users  
+# RVM users
 rvm reload
 
 # asdf users
@@ -212,7 +212,7 @@ Then try running `ccexport --help` again.
 **Manual dependency installation** (only needed if you don't have Homebrew):
 ```bash
 # If you're using system package managers instead of Homebrew:
-# - TruffleHog: https://github.com/trufflesecurity/trufflehog#installation  
+# - TruffleHog: https://github.com/trufflesecurity/trufflehog#installation
 # - cmark-gfm: May require building from source on some Linux distributions
 
 # To skip dependency checking entirely:
@@ -312,8 +312,10 @@ ccexport --in /path/to/project --from 2024-01-15 --out ./my-exports --timestamps
 - `--from DATE`: Filter messages from this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--to DATE`: Filter messages to this date (YYYY-MM-DD or timestamp format from --timestamps output)
 - `--today`: Filter messages from today only (in your local timezone)
+- `--session ID`: Export a specific session
 - `--out PATH`: Custom output directory or specific file path (supports relative paths, use .md extension for specific file)
 - `--timestamps`: Show precise timestamps with each message for easy reference
+- `--clean`: Suppress the output of thinking and tool use
 - `--preview`: Generate HTML preview and open in browser automatically
 - `--no-open`: Generate HTML preview without opening in browser (requires --preview)
 - `--template NAME_OR_PATH`: HTML template name (from templates dir) or file path (default: default)

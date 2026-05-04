@@ -246,6 +246,101 @@ RSpec.describe ClaudeConversationExporter do
       expect(result[:total_messages]).to eq(0)
     end
 
+    context 'with --clean option' do
+      let(:tool_use_id) { 'toolu_01AbCdEfGhIjKlMn' }
+      let(:clean_jsonl_content) do
+        [
+          {
+            'message' => { 'role' => 'user', 'content' => 'Hello' },
+            'timestamp' => '2024-01-01T10:00:00Z'
+          },
+          {
+            'requestId' => 'req-1',
+            'message' => {
+              'id' => 'msg_001',
+              'role' => 'assistant',
+              'content' => [
+                { 'type' => 'thinking', 'thinking' => 'Let me think about this carefully.' },
+                { 'type' => 'text', 'text' => 'Here is my response.' }
+              ]
+            },
+            'timestamp' => '2024-01-01T10:00:10Z'
+          },
+          {
+            'requestId' => 'req-2',
+            'message' => {
+              'id' => 'msg_002',
+              'role' => 'assistant',
+              'content' => [
+                { 'type' => 'tool_use', 'id' => tool_use_id, 'name' => 'Read', 'input' => { 'file_path' => '/tmp/file.txt' } }
+              ]
+            },
+            'timestamp' => '2024-01-01T10:00:20Z'
+          },
+          {
+            'toolUseResult' => { 'tool_use_id' => tool_use_id },
+            'message' => {
+              'role' => 'user',
+              'content' => [{ 'type' => 'tool_result', 'tool_use_id' => tool_use_id, 'content' => 'file contents' }]
+            },
+            'timestamp' => '2024-01-01T10:00:21Z'
+          },
+          {
+            'message' => { 'role' => 'user', 'content' => 'Thanks' },
+            'timestamp' => '2024-01-01T10:00:30Z'
+          }
+        ].map(&:to_json).join("\n")
+      end
+
+      before do
+        File.write(session_file, clean_jsonl_content)
+      end
+
+      it 'omits the document metadata header' do
+        described_class.new(project_path, output_dir, { clean: true, silent: true }).export
+
+        content = File.read(Dir.glob(File.join(output_dir, '*.md')).first)
+        expect(content).not_to include('# Claude Code Conversation')
+        expect(content).not_to include('**Session:**')
+        expect(content).not_to include('**Started:**')
+        expect(content).not_to include('**Messages:**')
+        expect(content).not_to include('---')
+      end
+
+      it 'omits message ID HTML comments' do
+        described_class.new(project_path, output_dir, { clean: true, silent: true }).export
+
+        content = File.read(Dir.glob(File.join(output_dir, '*.md')).first)
+        expect(content).not_to include('<!-- msg_')
+      end
+
+      it 'omits thinking blocks but keeps the accompanying text' do
+        described_class.new(project_path, output_dir, { clean: true, silent: true }).export
+
+        content = File.read(Dir.glob(File.join(output_dir, '*.md')).first)
+        expect(content).not_to include('Let me think about this carefully.')
+        expect(content).to include('Here is my response.')
+      end
+
+      it 'omits tool use and tool result blocks' do
+        described_class.new(project_path, output_dir, { clean: true, silent: true }).export
+
+        content = File.read(Dir.glob(File.join(output_dir, '*.md')).first)
+        expect(content).not_to include('🤖🔧')
+        expect(content).not_to include('<details>')
+        expect(content).not_to include('file contents')
+      end
+
+      it 'preserves regular user and assistant messages' do
+        described_class.new(project_path, output_dir, { clean: true, silent: true }).export
+
+        content = File.read(Dir.glob(File.join(output_dir, '*.md')).first)
+        expect(content).to include('Hello')
+        expect(content).to include('Thanks')
+        expect(content).to include('Here is my response.')
+      end
+    end
+
     context 'with --session option' do
       let(:session_id) { 'abc12345-1234-1234-1234-abcdef123456' }
       let(:target_session_file) { File.join(session_dir, "#{session_id}.jsonl") }
@@ -428,6 +523,46 @@ RSpec.describe ClaudeConversationExporter do
       expect(result[:content]).to include('image')
       expect(result[:content]).to include('base64...')
       expect(result[:has_thinking]).to be false
+    end
+
+    context 'in clean mode' do
+      let(:exporter) { described_class.new(project_path, output_dir, { clean: true, silent: true }) }
+
+      it 'omits thinking blocks but keeps text' do
+        content_array = [
+          { 'type' => 'thinking', 'thinking' => 'Internal reasoning here.' },
+          { 'type' => 'text', 'text' => 'Visible response.' }
+        ]
+
+        result = exporter.send(:extract_text_content, content_array)
+        expect(result[:content]).not_to include('Internal reasoning here.')
+        expect(result[:content]).to include('Visible response.')
+      end
+
+      it 'omits tool_use items' do
+        content_array = [
+          { 'type' => 'text', 'text' => 'Before tool.' },
+          { 'type' => 'tool_use', 'name' => 'Read', 'input' => { 'file_path' => '/tmp/f.txt' } },
+          { 'type' => 'text', 'text' => 'After tool.' }
+        ]
+
+        result = exporter.send(:extract_text_content, content_array)
+        expect(result[:content]).not_to include('🤖🔧')
+        expect(result[:content]).not_to include('<details>')
+        expect(result[:content]).to include('Before tool.')
+        expect(result[:content]).to include('After tool.')
+      end
+
+      it 'omits unknown content types' do
+        content_array = [
+          { 'type' => 'image', 'data' => 'base64...' },
+          { 'type' => 'text', 'text' => 'Visible.' }
+        ]
+
+        result = exporter.send(:extract_text_content, content_array)
+        expect(result[:content]).not_to include('base64...')
+        expect(result[:content]).to include('Visible.')
+      end
     end
   end
 

@@ -55,6 +55,10 @@ module CcExport
           options[:session] = id
         end
 
+        parser.on("--clean", "Export only visible conversation (no tool calls, thinking, or metadata)") do
+          options[:clean] = true
+        end
+
         parser.on("-s", "--silent", "Silent mode - suppress all output") do
           options[:silent] = true
         end
