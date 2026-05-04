@@ -1097,6 +1097,11 @@ RSpec.describe ClaudeConversationExporter do
       it 'handles invalid timestamps gracefully' do
         expect(exporter.send(:message_in_date_range?, 'invalid-timestamp')).to be true
       end
+
+      it 'handles nil timestamps gracefully' do
+        filtered_exporter = described_class.new(project_path, output_dir, { from: '2024-01-01', silent: true })
+        expect(filtered_exporter.send(:message_in_date_range?, nil)).to be true
+      end
     end
 
     describe '#parse_date_input' do

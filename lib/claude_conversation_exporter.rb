@@ -391,6 +391,7 @@ class ClaudeConversationExporter
 
   def message_in_date_range?(timestamp)
     return true unless @from_time || @to_time
+    return true if timestamp.nil?
 
     begin
       message_time = Time.parse(timestamp)
