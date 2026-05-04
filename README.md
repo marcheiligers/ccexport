@@ -218,11 +218,17 @@ export PATH="$(gem environment gemdir)/bin:$PATH"
 
 Which file to add it to depends on your shell:
 
-- **zsh** (default on macOS Catalina and later): `~/.zprofile`
-- **bash** (default on older macOS or if you've switched): `~/.bash_profile`
+- **zsh** (default on macOS Catalina and later):
+  ```bash
+  echo 'export PATH="$(gem environment gemdir)/bin:$PATH"' >> ~/.zprofile
+  ```
+- **bash** (default on older macOS or if you've switched):
+  ```bash
+  echo 'export PATH="$(gem environment gemdir)/bin:$PATH"' >> ~/.bash_profile
+  ```
 - **fish**: `~/.config/fish/config.fish`, using `fish_add_path (gem environment gemdir)/bin`
 
-After editing the file, restart your terminal or run `source ~/.zprofile` (adjust for your shell), then try `ccexport --help` again.
+After running the command, restart your terminal or run `source ~/.zprofile` (adjust for your shell), then try `ccexport --help` again.
 </details>
 
 **That's it!** When you first run ccexport, it will automatically detect and install any missing dependencies (TruffleHog and cmark-gfm) if you have Homebrew installed.
