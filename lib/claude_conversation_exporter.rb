@@ -168,7 +168,8 @@ class ClaudeConversationExporter
     @options = options
     @show_timestamps = options[:timestamps] || false
     @clean = options[:clean] || false
-    @silent = options[:silent] || false
+    @stdout = options[:stdout] || false
+    @silent = @stdout || options[:silent] || false
     @leaf_summaries = []
     @skipped_messages = []
     @secrets_detected = []
@@ -231,13 +232,20 @@ class ClaudeConversationExporter
       return { sessions_exported: 0, total_messages: 0 }
     end
 
+    markdown = format_combined_markdown(sessions)
+
+    if @stdout
+      $stdout.print(markdown)
+      return { sessions_exported: sessions.length, total_messages: total_messages, leaf_summaries: @leaf_summaries, output_file: nil }
+    end
+
     # Generate output path if not already specified
     if output_path.nil?
       filename = generate_combined_filename(sessions)
       output_path = File.join(output_dir, filename)
     end
 
-    File.write(output_path, format_combined_markdown(sessions))
+    File.write(output_path, markdown)
 
     # Write skip log if there were any skipped messages
     write_skip_log(output_path)
