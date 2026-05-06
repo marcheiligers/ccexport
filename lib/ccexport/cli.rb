@@ -59,6 +59,10 @@ module CcExport
           options[:clean] = true
         end
 
+        parser.on("--stdout", "Write markdown to stdout instead of a file (implies --silent)") do
+          options[:stdout] = true
+        end
+
         parser.on("-s", "--silent", "Silent mode - suppress all output") do
           options[:silent] = true
         end

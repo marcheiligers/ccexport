@@ -341,6 +341,33 @@ RSpec.describe ClaudeConversationExporter do
       end
     end
 
+    context 'with --stdout option' do
+      before do
+        File.write(session_file, jsonl_content)
+        allow_any_instance_of(described_class).to receive(:system)
+      end
+
+      it 'writes markdown to $stdout instead of a file' do
+        expect { described_class.new(project_path, output_dir, { stdout: true }).export }
+          .to output(/Hello, how are you?/).to_stdout
+      end
+
+      it 'creates no output file' do
+        described_class.new(project_path, output_dir, { stdout: true }).export
+        expect(Dir.glob(File.join(output_dir, '*.md'))).to be_empty
+      end
+
+      it 'returns output_file as nil' do
+        result = described_class.new(project_path, output_dir, { stdout: true }).export
+        expect(result[:output_file]).to be_nil
+      end
+
+      it 'suppresses informational output to stdout (implies silent)' do
+        expect { described_class.new(project_path, output_dir, { stdout: true }).export }
+          .not_to output(/Exported|Found/).to_stdout
+      end
+    end
+
     context 'with --session option' do
       let(:session_id) { 'abc12345-1234-1234-1234-abcdef123456' }
       let(:target_session_file) { File.join(session_dir, "#{session_id}.jsonl") }
@@ -1069,6 +1096,11 @@ RSpec.describe ClaudeConversationExporter do
 
       it 'handles invalid timestamps gracefully' do
         expect(exporter.send(:message_in_date_range?, 'invalid-timestamp')).to be true
+      end
+
+      it 'handles nil timestamps gracefully' do
+        filtered_exporter = described_class.new(project_path, output_dir, { from: '2024-01-01', silent: true })
+        expect(filtered_exporter.send(:message_in_date_range?, nil)).to be true
       end
     end
 
