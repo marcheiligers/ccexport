@@ -207,6 +207,30 @@ mise reshim
 Then try running `ccexport --help` again.
 </details>
 
+<details>
+<summary>Add the gem bin directory to your PATH (plain Homebrew Ruby, no version manager)</summary>
+
+If you installed Ruby directly via `brew install ruby` and aren't using a version manager, the gem executables may not be on your PATH. Add this line to your shell profile:
+
+```bash
+export PATH="$(gem environment gemdir)/bin:$PATH"
+```
+
+Which file to add it to depends on your shell:
+
+- **zsh** (default on macOS Catalina and later):
+  ```bash
+  echo 'export PATH="$(gem environment gemdir)/bin:$PATH"' >> ~/.zprofile
+  ```
+- **bash** (default on older macOS or if you've switched):
+  ```bash
+  echo 'export PATH="$(gem environment gemdir)/bin:$PATH"' >> ~/.bash_profile
+  ```
+- **fish**: `~/.config/fish/config.fish`, using `fish_add_path (gem environment gemdir)/bin`
+
+After running the command, restart your terminal or run `source ~/.zprofile` (adjust for your shell), then try `ccexport --help` again.
+</details>
+
 **That's it!** When you first run ccexport, it will automatically detect and install any missing dependencies (TruffleHog and cmark-gfm) if you have Homebrew installed.
 
 **Manual dependency installation** (only needed if you don't have Homebrew):
