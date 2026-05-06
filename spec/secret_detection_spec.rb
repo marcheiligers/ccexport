@@ -91,6 +91,62 @@ RSpec.describe 'Secret Detection Integration' do
       expect(final_markdown_secrets.length).to be >= 3  # GitHub + AWS + Slack from final markdown
     end
 
+    it 'redacts secrets appearing in bash tool_result output (e.g. printenv)' do
+      fake_token = 'ghp_1234567890123456789012345678901234567890'
+      tool_id = 'toolu_bash_test_001'
+      session_data = [
+        {
+          'type' => 'assistant',
+          'requestId' => 'req_test_001',
+          'message' => {
+            'role' => 'assistant',
+            'id' => 'msg_bash_assistant',
+            'content' => [
+              {
+                'type' => 'tool_use',
+                'id' => tool_id,
+                'name' => 'Bash',
+                'input' => { 'command' => 'printenv | grep -i MY_TOKEN' }
+              }
+            ]
+          }
+        },
+        {
+          'type' => 'user',
+          'toolUseResult' => {
+            'stdout' => "MY_TOKEN=#{fake_token}",
+            'stderr' => '',
+            'interrupted' => false,
+            'isImage' => false
+          },
+          'message' => {
+            'role' => 'user',
+            'content' => [
+              {
+                'type' => 'tool_result',
+                'tool_use_id' => tool_id,
+                'content' => "MY_TOKEN=#{fake_token}",
+                'is_error' => false
+              }
+            ]
+          }
+        }
+      ]
+
+      session_file = File.join(temp_dir, 'bash-secret-session.jsonl')
+      File.write(session_file, session_data.map(&:to_json).join("\n"))
+      allow(exporter).to receive(:find_session_directory).and_return(temp_dir)
+
+      exporter.export
+
+      md_files = Dir.glob(File.join(output_dir, '*.md'))
+      expect(md_files.length).to eq(1)
+
+      md_content = File.read(md_files.first)
+      expect(md_content).not_to include(fake_token)
+      expect(md_content).to include('[REDACTED]')
+    end
+
     it 'should not create secrets log when no secrets are detected' do
       clean_session_data = [
         {
