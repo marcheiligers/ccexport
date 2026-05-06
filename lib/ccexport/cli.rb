@@ -2,6 +2,8 @@
 
 require 'optparse'
 require 'time'
+require 'net/http'
+require 'json'
 
 module CcExport
   module CLI
@@ -71,6 +73,10 @@ module CcExport
           options[:skip_dependency_check] = true
         end
 
+        parser.on("--no-update-check", "Skip checking for available updates") do
+          options[:no_update_check] = true
+        end
+
         parser.on("-h", "--help", "Show this help message") do
           puts parser
           exit
@@ -78,6 +84,10 @@ module CcExport
       end.parse!(argv)
 
       check_dependencies(options[:silent]) unless options[:skip_dependency_check]
+
+      unless options[:silent] || options[:stdout] || options[:no_update_check]
+        check_for_updates
+      end
 
       begin
         if options[:no_open] && !options[:preview]
@@ -110,6 +120,68 @@ module CcExport
         puts "Error: #{e.message}" unless options[:silent]
         exit 1
       end
+    end
+
+    def self.check_for_updates
+      updates = []
+
+      # Check gem version against RubyGems
+      begin
+        uri = URI('https://rubygems.org/api/v1/gems/ccexport.json')
+        response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 5) do |http|
+          http.get(uri.path)
+        end
+        if response.is_a?(Net::HTTPSuccess)
+          latest = JSON.parse(response.body)['version']
+          if latest && version_newer?(latest, VERSION)
+            updates << { type: :gem, current: VERSION, latest: latest }
+          end
+        end
+      rescue StandardError
+        # Network errors are non-fatal
+      end
+
+      # Check Homebrew packages if brew is available
+      if system('which brew > /dev/null 2>&1')
+        %w[trufflehog cmark-gfm].each do |pkg|
+          next unless system("which #{pkg} > /dev/null 2>&1")
+          outdated = `brew outdated --quiet #{pkg} 2>/dev/null`.strip
+          updates << { type: :brew, package: pkg } unless outdated.empty?
+        end
+      end
+
+      return if updates.empty?
+
+      puts "\nUpdates available:"
+      updates.each do |u|
+        if u[:type] == :gem
+          puts "  ccexport gem: #{u[:current]} → #{u[:latest]}"
+        else
+          puts "  #{u[:package]} (Homebrew)"
+        end
+      end
+
+      return unless $stdin.tty?
+
+      print "\nWould you like to update? [y/N] "
+      $stdout.flush
+      response = $stdin.gets&.strip&.downcase
+      return unless response == 'y'
+
+      updates.each do |u|
+        if u[:type] == :gem
+          puts "Updating ccexport gem..."
+          system('gem update ccexport')
+          puts "Restart ccexport to use the new version."
+        else
+          puts "Updating #{u[:package]}..."
+          system("brew upgrade #{u[:package]}")
+        end
+      end
+    end
+
+    def self.version_newer?(a, b)
+      a.split('.').map(&:to_i) > b.split('.').map(&:to_i)
     end
 
     def self.check_dependencies(silent = false)
